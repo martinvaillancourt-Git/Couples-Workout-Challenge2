@@ -86,6 +86,7 @@ export default function App() {
   return (
     <div style={s.page}>
       <div style={s.container}>
+        {/* Header */}
         <header style={s.header}>
           <div>
             <span style={s.badge}>COUPLES REPS ARENA</span>
@@ -93,12 +94,12 @@ export default function App() {
             <p style={s.subtitle}>Pure Repetition Counter &amp; Big Calendar Grid</p>
           </div>
           <div style={s.scoreCardsRow}>
-            <div style={{ background: '#111827', border: `2px solid ${martinReps >= karineReps ? '#38bdf8' : '#1e293b'}`, borderRadius: '12px', padding: '12px 18px', minWidth: '150px' }}>
-              <div style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem' }}>Martin {martinReps > karineReps && '👑'}</div>
+            <div style={{ ...s.playerCard, borderColor: martinReps >= karineReps ? '#38bdf8' : '#1e293b' }}>
+              <div style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>Martin {martinReps > karineReps && '👑'}</div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
-            <div style={{ background: '#111827', border: `2px solid ${karineReps > martinReps ? '#f472b6' : '#1e293b'}`, borderRadius: '12px', padding: '12px 18px', minWidth: '150px' }}>
-              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem' }}>Karine {karineReps > martinReps && '👑'}</div>
+            <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }}>
+              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>Karine {karineReps > martinReps && '👑'}</div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
           </div>
@@ -106,24 +107,28 @@ export default function App() {
 
         {taunt && (
           <div style={s.tauntBanner}>
-            <span>📣</span> <div>{taunt}</div>
+            <span style={{ fontSize: '1.2rem' }}>📣</span> <div>{taunt}</div>
           </div>
         )}
 
+        {/* Tug of War */}
         <div style={s.panel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#94a3b8' }}>
-            <span>🪢 Live Tug-of-War Reps Bar</span>
-            <span>{martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.88rem', color: '#94a3b8' }}>
+            <span style={{ fontWeight: 600 }}>🪢 Live Tug-of-War Reps Bar</span>
+            <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+              {martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}
+            </span>
           </div>
           <div style={s.tugOuter}>
-            <div style={{ ...s.tugM, width: `${martinPct}%` }}>{martinPct > 15 && `Martin ${martinPct}%`}</div>
+            <div style={{ ...s.tugM, width: `${martinPct}%` }}>{martinPct > 12 && `Martin ${martinPct}%`}</div>
             <div style={s.tugFlag}>🚩</div>
-            <div style={{ ...s.tugK, width: `${100 - martinPct}%` }}>{100 - martinPct > 15 && `Karine ${100 - martinPct}%`}</div>
+            <div style={{ ...s.tugK, width: `${100 - martinPct}%` }}>{100 - martinPct > 12 && `Karine ${100 - martinPct}%`}</div>
           </div>
         </div>
 
+        {/* Navigation & Player Toggle */}
         <div style={s.nav}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8' }}>💪 Reps Logger</button>
             <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8' }}>🗓️ Big Calendar</button>
             <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8' }}>
@@ -131,37 +136,38 @@ export default function App() {
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Logging for:</span>
+            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Logging for:</span>
             <button onClick={() => setPerson('Martin')} style={{ ...s.toggleBtn, background: person === 'Martin' ? '#0284c7' : '#1e293b' }}>Martin</button>
             <button onClick={() => setPerson('Karine')} style={{ ...s.toggleBtn, background: person === 'Karine' ? '#db2777' : '#1e293b' }}>Karine</button>
           </div>
         </div>
 
+        {/* TAB 1: LOGGER */}
         {tab === 'arena' && (
           <div style={s.grid2}>
             <div style={s.panel}>
-              <h3 style={{ marginTop: 0 }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Enter your rep count and an optional note below:</p>
+              <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Tap a quick add button or enter your custom rep count below:</p>
 
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                <button onClick={() => logReps(person, 10, 'Quick Set')} style={s.quickBtn}>+10 Reps</button>
-                <button onClick={() => logReps(person, 25, 'Power Set')} style={s.quickBtn}>+25 Reps</button>
-                <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>+50 Reps</button>
-                <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>+100 Reps</button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                <button onClick={() => logReps(person, 10, 'Quick Set')} style={s.quickBtn}>⚡ +10 Reps</button>
+                <button onClick={() => logReps(person, 25, 'Power Set')} style={s.quickBtn}>🔥 +25 Reps</button>
+                <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>🦍 +50 Reps</button>
+                <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>👑 +100 Reps</button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <input
                   type="text"
-                  placeholder="Note (e.g. Push-ups, Squats, Core)"
+                  placeholder="Note / Exercise Name (e.g. Push-ups, Squats)"
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}
                   style={s.input}
                 />
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
                   <input
                     type="number"
-                    placeholder="Custom rep count"
+                    placeholder="Custom count"
                     value={repInput}
                     onChange={e => setRepInput(e.target.value)}
                     style={{ ...s.input, flex: 1 }}
@@ -177,24 +183,24 @@ export default function App() {
             </div>
 
             <div style={s.panel}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ margin: 0 }}>📋 Repetition Feed</h3>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {history.length > 0 && <button onClick={undoLast} style={s.smallBtn}>Undo Last</button>}
                   {!resetConfirm ? (
                     <button onClick={() => setResetConfirm(true)} style={{ ...s.smallBtn, color: '#f87171' }}>Reset</button>
                   ) : (
-                    <button onClick={() => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm</button>
+                    <button onClick={() => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm Reset</button>
                   )}
                 </div>
               </div>
 
-              {history.length === 0 ? <p style={{ color: '#64748b' }}>No reps logged yet.</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+              {history.length === 0 ? <p style={{ color: '#64748b' }}>No reps logged yet. Start crushing reps!</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
                   {history.slice(0, 8).map(i => (
                     <div key={i.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps ({i.label})
+                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps <span style={{ color: '#94a3b8' }}>({i.label})</span>
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{i.time}</span>
                     </div>
@@ -205,19 +211,20 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 2: BIG CALENDAR GRID */}
         {tab === 'cal' && (
           <div style={s.grid2}>
             <div style={s.panel}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <button onClick={() => setCalDate(new Date(yr, mo - 1, 1))} style={s.smallBtn}>◀ Prev</button>
-                <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🗓️ {calDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+                <h2 style={{ margin: 0, fontSize: '1.25rem' }}>🗓️ {calDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
                 <button onClick={() => setCalDate(new Date(yr, mo + 1, 1))} style={s.smallBtn}>Next ▶</button>
               </div>
 
               <div style={s.calGrid}>
-                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.78rem', color: '#64748b', paddingBottom: '4px' }}>{d}</div>)}
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', paddingBottom: '6px' }}>{d}</div>)}
                 {cells.map((c, idx) => {
-                  if (!c) return <div key={idx} style={{ height: '84px' }} />;
+                  if (!c) return <div key={idx} style={{ height: '90px' }} />;
                   const dayLogs = history.filter(h => h.date === c.dateStr);
                   const mReps = dayLogs.filter(l => l.person === 'Martin').reduce((a, b) => a + b.reps, 0);
                   const kReps = dayLogs.filter(l => l.person === 'Karine').reduce((a, b) => a + b.reps, 0);
@@ -228,28 +235,29 @@ export default function App() {
                       key={c.dateStr}
                       onClick={() => setSelectedDay(c.dateStr)}
                       style={{
-                        height: '84px',
-                        borderRadius: '10px',
+                        height: '90px',
+                        borderRadius: '12px',
                         border: `2px solid ${isSel ? '#fbbf24' : (mReps > 0 || kReps > 0) ? '#334155' : '#1e293b'}`,
                         background: isSel ? '#1e293b' : '#090d16',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'flex-start',
-                        paddingTop: '6px',
+                        paddingTop: '8px',
                         cursor: 'pointer',
-                        color: '#fff'
+                        color: '#fff',
+                        transition: 'all 0.2s ease'
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{c.day}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.75rem', gap: '2px', width: '100%', padding: '0 4px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '6px' }}>{c.day}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.72rem', gap: '3px', width: '100%', padding: '0 4px' }}>
                         {mReps > 0 && (
-                          <div style={{ background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderRadius: '4px', fontWeight: 800, padding: '1px 0' }}>
+                          <div style={{ background: 'rgba(2, 132, 199, 0.3)', color: '#38bdf8', borderRadius: '5px', fontWeight: 800, padding: '2px 0' }}>
                             M: {mReps}
                           </div>
                         )}
                         {kReps > 0 && (
-                          <div style={{ background: 'rgba(219, 39, 119, 0.25)', color: '#f472b6', borderRadius: '4px', fontWeight: 800, padding: '1px 0' }}>
+                          <div style={{ background: 'rgba(219, 39, 119, 0.3)', color: '#f472b6', borderRadius: '5px', fontWeight: 800, padding: '2px 0' }}>
                             K: {kReps}
                           </div>
                         )}
@@ -261,9 +269,9 @@ export default function App() {
             </div>
 
             <div style={s.panel}>
-              <h3 style={{ marginTop: 0 }}>Detailed Breakdown for {selectedDay}</h3>
-              {selectedDayLogs.length === 0 ? <p style={{ color: '#64748b' }}>No rep sessions recorded on this date.</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '14px' }}>Detailed Breakdown for {selectedDay}</h3>
+              {selectedDayLogs.length === 0 ? <p style={{ color: '#64748b' }}>No rep sessions recorded on this date. Click any day on the calendar to inspect!</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {selectedDayLogs.map(item => (
                     <div key={item.id} style={s.feedItem}>
                       <div>
@@ -278,19 +286,20 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 3: TROPHIES */}
         {tab === 'trophies' && (
           <div style={s.panel}>
-            <h3 style={{ marginTop: 0 }}>🏆 Couples Trophy Room</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Unlock achievements together as your total repetition count climbs!</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '6px' }}>🏆 Couples Trophy Room</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '20px' }}>Unlock achievements together as your total repetition count climbs!</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
               {TROPHIES.map(t => {
                 const unlocked = t.check(martinReps, karineReps, history);
                 return (
-                  <div key={t.id} style={{ background: '#090d16', border: `1px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
-                    <span style={{ fontSize: '2.5rem' }}>{t.icon}</span>
-                    <h4 style={{ margin: '8px 0 4px 0', fontSize: '1.05rem' }}>{t.title}</h4>
-                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
-                    <div style={{ marginTop: '10px', fontSize: '0.75rem', fontWeight: 800, color: unlocked ? '#fbbf24' : '#64748b' }}>
+                  <div key={t.id} style={{ background: '#090d16', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '16px', padding: '18px', textAlign: 'center', opacity: unlocked ? 1 : 0.4, boxShadow: unlocked ? '0 10px 20px -5px rgba(251, 191, 36, 0.15)' : 'none' }}>
+                    <span style={{ fontSize: '2.8rem', display: 'block', marginBottom: '8px' }}>{t.icon}</span>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>{t.title}</h4>
+                    <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
+                    <div style={{ marginTop: '12px', fontSize: '0.75rem', fontWeight: 800, color: unlocked ? '#fbbf24' : '#64748b' }}>
                       {unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
                     </div>
                   </div>
@@ -305,29 +314,13 @@ export default function App() {
 }
 
 const s = {
-  page: { minHeight: '100vh', background: '#090d16', color: '#f8fafc', fontFamily: 'sans-serif', padding: '20px', boxSizing: 'border-box' },
-  container: { maxWidth: '1100px', margin: '0 auto' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #1e293b', paddingBottom: '16px' },
-  badge: { fontSize: '0.7rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56,189,248,0.1)', padding: '3px 8px', borderRadius: '99px' },
-  title: { fontSize: '1.8rem', fontWeight: 800, margin: '4px 0' },
-  subtitle: { fontSize: '0.9rem', color: '#94a3b8', margin: 0 },
-  scoreCardsRow: { display: 'flex', gap: '12px' },
-  scoreNum: { fontSize: '1.5rem', fontWeight: 800 },
-  unit: { fontSize: '0.75rem', color: '#64748b', fontWeight: 600 },
-  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fde047', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.9rem' },
-  panel: { background: '#111827', border: '1px solid #1e293b', borderRadius: '14px', padding: '16px', marginBottom: '16px' },
-  tugOuter: { display: 'flex', height: '28px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden' },
-  tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '12px', fontSize: '0.75rem', fontWeight: 800, color: '#fff' },
-  tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '12px', fontSize: '0.75rem', fontWeight: 800, color: '#fff' },
-  tugFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 },
-  nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', background: '#111827', padding: '8px 14px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '16px' },
-  navBtn: { border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' },
-  toggleBtn: { border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.85rem' },
-  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' },
-  quickBtn: { background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', padding: '8px 14px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' },
-  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#090d16', color: '#fff', fontSize: '0.9rem' },
-  primaryBtn: { padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' },
-  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem' },
-  calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' },
-  smallBtn: { background: '#1e293b', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }
-};
+  page: { minHeight: '100vh', background: '#090d16', backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #090d16 70%)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '24px 20px', boxSizing: 'border-box' },
+  container: { maxWidth: '1200px', margin: '0 auto' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '20px' },
+  badge: { fontSize: '0.72rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56,189,248,0.12)', padding: '4px 10px', borderRadius: '99px', letterSpacing: '0.05em' },
+  title: { fontSize: '2.1rem', fontWeight: 800, margin: '6px 0 4px 0', letterSpacing: '-0.02em' },
+  subtitle: { fontSize: '0.95rem', color: '#94a3b8', margin: 0 },
+  scoreCardsRow: { display: 'flex', gap: '14px' },
+  playerCard: { background: '#111827', border: '2px solid', borderRadius: '14px', padding: '14px 20px', minWidth: '160px', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.3)' },
+  scoreNum: { fontSize: '1.6rem', fontWeight: 800 },
+  unit: { fontSize: '0.75rem', color: '#64
