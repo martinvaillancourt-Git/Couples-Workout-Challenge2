@@ -42,7 +42,6 @@ export default function App() {
   const [taunt, setTaunt] = useState('');
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
-  const [resetConfirm, setResetConfirm] = useState(false);
 
   useEffect(() => { localStorage.setItem('mk_scores', JSON.stringify(scores)); }, [scores]);
   useEffect(() => { localStorage.setItem('mk_history', JSON.stringify(history)); }, [history]);
@@ -116,7 +115,7 @@ export default function App() {
         <div style={s.panel}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#94a3b8' }}>
             <span>🪢 Tug-of-War</span>
-            <span>{martinTot === karineTotal ? 'Tie' : martinTot > karineTotal ? `Martin leads (${martinPct}%)` : `Karine leads (${100 - martinPct}%)`}</span>
+            <span>{martinTot === karineTot ? 'Tie' : martinTot > karineTot ? `Martin leads (${martinPct}%)` : `Karine leads (${100 - martinPct}%)`}</span>
           </div>
           <div style={s.tugOuter}>
             <div style={{ ...s.tugM, width: `${martinPct}%` }}>{martinPct > 15 && `Martin`}</div>
