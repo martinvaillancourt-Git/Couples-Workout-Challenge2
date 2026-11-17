@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const EXERCISES = [
-  { id: 'pushups', label: 'Push-ups', icon: '💪' },
-  { id: 'squats', label: 'Squats', icon: '🦵' },
-  { id: 'glutes', label: 'Glute Bridges', icon: '🍑' },
-  { id: 'plank', label: 'Plank (Sec)', icon: '⏱️' },
-  { id: 'custom', label: 'Other Reps', icon: '⭐' },
-];
-
 const TROPHIES = [
   { id: 'first', title: 'First Rep', desc: 'Logged your very first repetition', icon: '🎯', check: (m, k, h) => h.length >= 1 },
-  { id: 'push_100', title: 'Century Push-ups', desc: 'Reached 100 total push-ups', icon: '💥', check: (m, k, h) => h.filter(i => i.label === 'Push-ups').reduce((a, b) => a + b.reps, 0) >= 100 },
-  { id: 'squat_100', title: 'Squat Machine', desc: 'Reached 100 total squats', icon: '🦵', check: (m, k, h) => h.filter(i => i.label === 'Squats').reduce((a, b) => a + b.reps, 0) >= 100 },
   { id: 'beast_session', title: 'Beast Session', desc: 'Logged 50+ reps in a single entry', icon: '🦍', check: (m, k, h) => h.some(i => i.reps >= 50) },
   { id: 'total_500', title: '500 Rep Club', desc: 'Hit 500 total reps combined', icon: '🥉', check: (m, k, h) => m + k >= 500 },
   { id: 'total_1000', title: '1,000 Rep Titan', desc: 'Hit 1,000 total reps combined', icon: '🥈', check: (m, k, h) => m + k >= 1000 },
@@ -22,26 +12,32 @@ const TROPHIES = [
     return Object.values(dates).some(set => set.size >= 2);
   }},
   { id: 'ten_workouts', title: 'Consistency Champ', desc: 'Completed 10 separate logging sessions', icon: '📅', check: (m, k, h) => h.length >= 10 },
-  { id: 'night_owl', title: 'Night Owl', desc: 'Logged a workout after 8:00 PM', icon: '🌙', check: (m, k, h) => h.some(i => i.hour >= 20) },
+  { id: 'night_owl', title: 'Night Owl', desc: 'Logged a session after 8:00 PM', icon: '🌙', check: (m, k, h) => h.some(i => i.hour >= 20) },
 ];
 
 export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
   
-  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_reps_scores')) || { Martin: 0, Karine: 0 });
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_reps_history')) || []);
+  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_pure_scores')) || { Martin: 0, Karine: 0 });
+  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_pure_history')) || []);
   
-  const [selectedEx, setSelectedEx] = useState('Push-ups');
   const [repInput, setRepInput] = useState('');
-  const [customLabel, setCustomLabel] = useState('');
+  const [noteInput, setNoteInput] = useState('');
+  const [taunt, setTaunt] = useState('');
   
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  useEffect(() => { localStorage.setItem('mk_reps_scores', JSON.stringify(scores)); }, [scores]);
-  useEffect(() => { localStorage.setItem('mk_reps_history', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('mk_pure_scores', JSON.stringify(scores)); }, [scores]);
+  useEffect(() => { localStorage.setItem('mk_pure_history', JSON.stringify(history)); }, [history]);
+
+  useEffect(() => {
+    const hr = new Date().getHours();
+    if (hr === 12) setTaunt('🕛 Noon Check-in: Half the day is gone! Time to log some reps and pull the rope.');
+    else if (hr === 18) setTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
+  }, []);
 
   const logReps = (who, count, label) => {
     const num = Number(count);
@@ -53,13 +49,14 @@ export default function App() {
       id: Date.now(),
       person: who,
       reps: num,
-      label: label || selectedEx,
+      label: label || 'Workout Reps',
       date: now.toISOString().split('T')[0],
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
     };
     setHistory(prev => [entry, ...prev]);
     setRepInput('');
+    setNoteInput('');
   };
 
   const undoLast = () => {
@@ -91,25 +88,31 @@ export default function App() {
       <div style={s.container}>
         <header style={s.header}>
           <div>
-            <span style={s.badge}>COUPLES REPS BATTLE</span>
+            <span style={s.badge}>COUPLES REPS ARENA</span>
             <h1 style={s.title}>Martin vs. Karine</h1>
-            <p style={s.subtitle}>Total Repetitions Counter &amp; Calendar Showdown</p>
+            <p style={s.subtitle}>Pure Repetition Counter &amp; Big Calendar Grid</p>
           </div>
           <div style={s.scoreCardsRow}>
-            <div style={{ background: '#111827', border: `2px solid ${martinReps >= karineReps ? '#38bdf8' : '#1e293b'}`, borderRadius: '12px', padding: '10px 16px', minWidth: '130px' }}>
-              <div style={{ color: '#38bdf8', fontWeight: 700 }}>Martin {martinReps > karineReps && '👑'}</div>
+            <div style={{ background: '#111827', border: `2px solid ${martinReps >= karineReps ? '#38bdf8' : '#1e293b'}`, borderRadius: '12px', padding: '12px 18px', minWidth: '150px' }}>
+              <div style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem' }}>Martin {martinReps > karineReps && '👑'}</div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
-            <div style={{ background: '#111827', border: `2px solid ${karineReps > martinReps ? '#f472b6' : '#1e293b'}`, borderRadius: '12px', padding: '10px 16px', minWidth: '130px' }}>
-              <div style={{ color: '#f472b6', fontWeight: 700 }}>Karine {karineReps > martinReps && '👑'}</div>
+            <div style={{ background: '#111827', border: `2px solid ${karineReps > martinReps ? '#f472b6' : '#1e293b'}`, borderRadius: '12px', padding: '12px 18px', minWidth: '150px' }}>
+              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem' }}>Karine {karineReps > martinReps && '👑'}</div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
           </div>
         </header>
 
+        {taunt && (
+          <div style={s.tauntBanner}>
+            <span>📣</span> <div>{taunt}</div>
+          </div>
+        )}
+
         <div style={s.panel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#94a3b8' }}>
-            <span>🪢 Tug-of-War Reps Bar</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#94a3b8' }}>
+            <span>🪢 Live Tug-of-War Reps Bar</span>
             <span>{martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}</span>
           </div>
           <div style={s.tugOuter}>
@@ -121,13 +124,13 @@ export default function App() {
 
         <div style={s.nav}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8' }}>💪 Reps Arena</button>
-            <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8' }}>🗓️ Calendar Grid</button>
+            <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8' }}>💪 Reps Logger</button>
+            <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8' }}>🗓️ Big Calendar</button>
             <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8' }}>
               🏆 Trophies ({TROPHIES.filter(t => t.check(martinReps, karineReps, history)).length}/{TROPHIES.length})
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Logging for:</span>
             <button onClick={() => setPerson('Martin')} style={{ ...s.toggleBtn, background: person === 'Martin' ? '#0284c7' : '#1e293b' }}>Martin</button>
             <button onClick={() => setPerson('Karine')} style={{ ...s.toggleBtn, background: person === 'Karine' ? '#db2777' : '#1e293b' }}>Karine</button>
@@ -138,54 +141,38 @@ export default function App() {
           <div style={s.grid2}>
             <div style={s.panel}>
               <h3 style={{ marginTop: 0 }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px', marginBottom: '14px' }}>
-                {EXERCISES.map(ex => (
-                  <button
-                    key={ex.id}
-                    onClick={() => setSelectedEx(ex.label)}
-                    style={{
-                      border: `1px solid ${selectedEx === ex.label ? (person === 'Martin' ? '#0284c7' : '#db2777') : '#1e293b'}`,
-                      borderRadius: '10px',
-                      padding: '10px 6px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      color: '#fff',
-                      background: selectedEx === ex.label ? '#1e293b' : '#090d16',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.2rem' }}>{ex.icon}</span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, marginTop: '4px' }}>{ex.label}</span>
-                  </button>
-                ))}
+              <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Enter your rep count and an optional note below:</p>
+
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => logReps(person, 10, 'Quick Set')} style={s.quickBtn}>+10 Reps</button>
+                <button onClick={() => logReps(person, 25, 'Power Set')} style={s.quickBtn}>+25 Reps</button>
+                <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>+50 Reps</button>
+                <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>+100 Reps</button>
               </div>
 
-              {selectedEx === 'Other Reps' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <input
                   type="text"
-                  placeholder="Exercise name (e.g. Pull-ups)"
-                  value={customLabel}
-                  onChange={e => setCustomLabel(e.target.value)}
-                  style={{ ...s.input, width: '100%', marginBottom: '10px' }}
+                  placeholder="Note (e.g. Push-ups, Squats, Core)"
+                  value={noteInput}
+                  onChange={e => setNoteInput(e.target.value)}
+                  style={s.input}
                 />
-              )}
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="number"
-                  placeholder="Number of reps"
-                  value={repInput}
-                  onChange={e => setRepInput(e.target.value)}
-                  style={{ ...s.input, flex: 1 }}
-                />
-                <button
-                  onClick={() => logReps(person, repInput, selectedEx === 'Other Reps' ? (customLabel || 'Custom Reps') : selectedEx)}
-                  style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}
-                >
-                  Log Reps
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="number"
+                    placeholder="Custom rep count"
+                    value={repInput}
+                    onChange={e => setRepInput(e.target.value)}
+                    style={{ ...s.input, flex: 1 }}
+                  />
+                  <button
+                    onClick={() => logReps(person, repInput, noteInput || 'General Reps')}
+                    style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}
+                  >
+                    Add Reps
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -202,12 +189,12 @@ export default function App() {
                 </div>
               </div>
 
-              {history.length === 0 ? <p style={{ color: '#64748b' }}>No reps logged yet. Start crushing reps!</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px', overflowY: 'auto' }}>
+              {history.length === 0 ? <p style={{ color: '#64748b' }}>No reps logged yet.</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
                   {history.slice(0, 8).map(i => (
                     <div key={i.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} {i.label}
+                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps ({i.label})
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{i.time}</span>
                     </div>
@@ -221,16 +208,16 @@ export default function App() {
         {tab === 'cal' && (
           <div style={s.grid2}>
             <div style={s.panel}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <button onClick={() => setCalDate(new Date(yr, mo - 1, 1))} style={s.smallBtn}>◀ Prev</button>
-                <h3 style={{ margin: 0 }}>{calDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🗓️ {calDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
                 <button onClick={() => setCalDate(new Date(yr, mo + 1, 1))} style={s.smallBtn}>Next ▶</button>
               </div>
 
               <div style={s.calGrid}>
-                {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>{d}</div>)}
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.78rem', color: '#64748b', paddingBottom: '4px' }}>{d}</div>)}
                 {cells.map((c, idx) => {
-                  if (!c) return <div key={idx} />;
+                  if (!c) return <div key={idx} style={{ height: '84px' }} />;
                   const dayLogs = history.filter(h => h.date === c.dateStr);
                   const mReps = dayLogs.filter(l => l.person === 'Martin').reduce((a, b) => a + b.reps, 0);
                   const kReps = dayLogs.filter(l => l.person === 'Karine').reduce((a, b) => a + b.reps, 0);
@@ -241,9 +228,9 @@ export default function App() {
                       key={c.dateStr}
                       onClick={() => setSelectedDay(c.dateStr)}
                       style={{
-                        height: '56px',
-                        borderRadius: '8px',
-                        border: `1px solid ${isSel ? '#fbbf24' : (mReps > 0 || kReps > 0) ? '#334155' : '#1e293b'}`,
+                        height: '84px',
+                        borderRadius: '10px',
+                        border: `2px solid ${isSel ? '#fbbf24' : (mReps > 0 || kReps > 0) ? '#334155' : '#1e293b'}`,
                         background: isSel ? '#1e293b' : '#090d16',
                         display: 'flex',
                         flexDirection: 'column',
@@ -254,10 +241,18 @@ export default function App() {
                         color: '#fff'
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{c.day}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.68rem', marginTop: '2px', gap: '1px' }}>
-                        {mReps > 0 && <span style={{ color: '#38bdf8', fontWeight: 800 }}>M: {mReps}</span>}
-                        {kReps > 0 && <span style={{ color: '#f472b6', fontWeight: 800 }}>K: {kReps}</span>}
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{c.day}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.75rem', gap: '2px', width: '100%', padding: '0 4px' }}>
+                        {mReps > 0 && (
+                          <div style={{ background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderRadius: '4px', fontWeight: 800, padding: '1px 0' }}>
+                            M: {mReps}
+                          </div>
+                        )}
+                        {kReps > 0 && (
+                          <div style={{ background: 'rgba(219, 39, 119, 0.25)', color: '#f472b6', borderRadius: '4px', fontWeight: 800, padding: '1px 0' }}>
+                            K: {kReps}
+                          </div>
+                        )}
                       </div>
                     </button>
                   );
@@ -266,13 +261,13 @@ export default function App() {
             </div>
 
             <div style={s.panel}>
-              <h3 style={{ marginTop: 0 }}>Breakdown for {selectedDay}</h3>
-              {selectedDayLogs.length === 0 ? <p style={{ color: '#64748b' }}>No repetitions recorded on this date.</p> : (
+              <h3 style={{ marginTop: 0 }}>Detailed Breakdown for {selectedDay}</h3>
+              {selectedDayLogs.length === 0 ? <p style={{ color: '#64748b' }}>No rep sessions recorded on this date.</p> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {selectedDayLogs.map(item => (
                     <div key={item.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: item.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{item.person}</strong> — {item.reps} {item.label}
+                        <strong style={{ color: item.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{item.person}</strong> — {item.reps} reps ({item.label})
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.time}</span>
                     </div>
@@ -291,11 +286,11 @@ export default function App() {
               {TROPHIES.map(t => {
                 const unlocked = t.check(martinReps, karineReps, history);
                 return (
-                  <div key={t.id} style={{ background: '#090d16', border: `1px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '14px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
-                    <span style={{ fontSize: '2.2rem' }}>{t.icon}</span>
-                    <h4 style={{ margin: '6px 0 2px 0', fontSize: '1rem' }}>{t.title}</h4>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
-                    <div style={{ marginTop: '8px', fontSize: '0.72rem', fontWeight: 800, color: unlocked ? '#fbbf24' : '#64748b' }}>
+                  <div key={t.id} style={{ background: '#090d16', border: `1px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
+                    <span style={{ fontSize: '2.5rem' }}>{t.icon}</span>
+                    <h4 style={{ margin: '8px 0 4px 0', fontSize: '1.05rem' }}>{t.title}</h4>
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
+                    <div style={{ marginTop: '10px', fontSize: '0.75rem', fontWeight: 800, color: unlocked ? '#fbbf24' : '#64748b' }}>
                       {unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
                     </div>
                   </div>
@@ -317,20 +312,22 @@ const s = {
   title: { fontSize: '1.8rem', fontWeight: 800, margin: '4px 0' },
   subtitle: { fontSize: '0.9rem', color: '#94a3b8', margin: 0 },
   scoreCardsRow: { display: 'flex', gap: '12px' },
-  scoreNum: { fontSize: '1.4rem', fontWeight: 800 },
+  scoreNum: { fontSize: '1.5rem', fontWeight: 800 },
   unit: { fontSize: '0.75rem', color: '#64748b', fontWeight: 600 },
+  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fde047', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.9rem' },
   panel: { background: '#111827', border: '1px solid #1e293b', borderRadius: '14px', padding: '16px', marginBottom: '16px' },
-  tugOuter: { display: 'flex', height: '26px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden' },
-  tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '10px', fontSize: '0.72rem', fontWeight: 800, color: '#fff' },
-  tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '10px', fontSize: '0.72rem', fontWeight: 800, color: '#fff' },
+  tugOuter: { display: 'flex', height: '28px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden' },
+  tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '12px', fontSize: '0.75rem', fontWeight: 800, color: '#fff' },
+  tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '12px', fontSize: '0.75rem', fontWeight: 800, color: '#fff' },
   tugFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 },
   nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', background: '#111827', padding: '8px 14px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '16px' },
   navBtn: { border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' },
-  toggleBtn: { border: 'none', padding: '5px 12px', borderRadius: '8px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.8rem' },
+  toggleBtn: { border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.85rem' },
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' },
+  quickBtn: { background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', padding: '8px 14px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' },
   input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#090d16', color: '#fff', fontSize: '0.9rem' },
-  primaryBtn: { padding: '10px 16px', borderRadius: '8px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' },
-  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' },
-  calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' },
+  primaryBtn: { padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' },
+  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem' },
+  calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' },
   smallBtn: { background: '#1e293b', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }
 };
