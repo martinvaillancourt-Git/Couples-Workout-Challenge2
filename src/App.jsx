@@ -171,7 +171,53 @@ export default function App() {
     setChallenges((prev) =>
       prev.map((c) => (c.id === challengeId ? { ...c, completedBy: winner } : c))
     );
-    logSession(winner, target.reward, `Challenge Won: ${target.title}`); };  const addCustomChallenge = (e) => { e.preventDefault(); if (!newChallengeTitle.trim()) return; const item = { id: Date.now(), title: newChallengeTitle.trim(), desc: 'Custom couples showdown wager', reward: 150, stake: newChallengeStake.trim() \vert{}\vert{} 'Bragging rights', completedBy: null, }; setChallenges((prev) => [item, ...prev]); setNewChallengeTitle(''); setNewChallengeStake(''); };  const resetAll = () => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setChallenges(INITIAL_CHALLENGES); setShowResetConfirm(false); };  const martinTotal = scores.Martin; const karineTotal = scores.Karine; const combinedTotal = martinTotal + karineTotal; const martinPct = combinedTotal === 0 ? 50 : Math.round((martinTotal / combinedTotal) * 100);  const martinLevel = getLevelInfo(martinTotal); const karineLevel = getLevelInfo(karineTotal); const martinStreak = getStreak('Martin', history); const karineStreak = getStreak('Karine', history);  // Monthly Calendar Generation const year = calDate.getFullYear(); const month = calDate.getMonth(); const monthName = calDate.toLocaleString('default', { month: 'long', year: 'numeric' }); const firstDayOfMonth = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();  const calendarCells = []; for (let i = 0; i < firstDayOfMonth; i++) calendarCells.push(null); for (let d = 1; d <= daysInMonth; d++) { const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    logSession(winner, target.reward, `Challenge Won: ${target.title}`);
+  };
+
+  const addCustomChallenge = (e) => {
+    e.preventDefault();
+    if (!newChallengeTitle.trim()) return;
+    const item = {
+      id: Date.now(),
+      title: newChallengeTitle.trim(),
+      desc: 'Custom couples showdown wager',
+      reward: 150,
+      stake: newChallengeStake.trim() || 'Bragging rights',
+      completedBy: null,
+    };
+    setChallenges((prev) => [item, ...prev]);
+    setNewChallengeTitle('');
+    setNewChallengeStake('');
+  };
+
+  const resetAll = () => {
+    setScores({ Martin: 0, Karine: 0 });
+    setHistory([]);
+    setChallenges(INITIAL_CHALLENGES);
+    setShowResetConfirm(false);
+  };
+
+  const martinTotal = scores.Martin;
+  const karineTotal = scores.Karine;
+  const combinedTotal = martinTotal + karineTotal;
+  const martinPct = combinedTotal === 0 ? 50 : Math.round((martinTotal / combinedTotal) * 100);
+
+  const martinLevel = getLevelInfo(martinTotal);
+  const karineLevel = getLevelInfo(karineTotal);
+  const martinStreak = getStreak('Martin', history);
+  const karineStreak = getStreak('Karine', history);
+
+  // Monthly Calendar Generation
+  const year = calDate.getFullYear();
+  const month = calDate.getMonth();
+  const monthName = calDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const calendarCells = [];
+  for (let i = 0; i < firstDayOfMonth; i++) calendarCells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     calendarCells.push({ day: d, dateStr });
   }
 
@@ -203,7 +249,31 @@ export default function App() {
                   style={{
                     ...styles.xpFill,
                     backgroundColor: '#38bdf8',
-                    width: `${Math.min(100, Math.round(((martinTotal - martinLevel.prev) / (martinLevel.next - martinLevel.prev)) * 100))}\%`, }} /> </div> <div style={styles.streakRow}> <span>🔥 Streak: <strong>{martinStreak}d</strong> {martinStreak >= 3 ? '(+10\% XP!)' : ''}</span> <span>Next: {martinLevel.next}</span> </div> </div>  {/* Karine Card */} <div style={{ ...styles.playerCard, borderColor: karineTotal > martinTotal ? '#f472b6' : '#1e293b' }}> <div style={styles.playerTop}> <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f472b6' }}> Karine {karineTotal > martinTotal && karineTotal > 0 ? '👑' : ''} </span> <span style={styles.levelPill}>Lvl {karineLevel.level} • {karineLevel.title}</span> </div> <div style={styles.bigScore}>{karineTotal.toLocaleString()} <span style={styles.ptsLabel}>XP</span></div> <div style={styles.xpTrack}> <div style={{ ...styles.xpFill, backgroundColor: '#f472b6', width: `${Math.min(100, Math.round(((karineTotal - karineLevel.prev) / (karineLevel.next - karineLevel.prev)) * 100))}%`,
+                    width: `${Math.min(100, Math.round(((martinTotal - martinLevel.prev) / (martinLevel.next - martinLevel.prev)) * 100))}%`,
+                  }}
+                />
+              </div>
+              <div style={styles.streakRow}>
+                <span>🔥 Streak: <strong>{martinStreak}d</strong> {martinStreak >= 3 ? '(+10% XP!)' : ''}</span>
+                <span>Next: {martinLevel.next}</span>
+              </div>
+            </div>
+
+            {/* Karine Card */}
+            <div style={{ ...styles.playerCard, borderColor: karineTotal > martinTotal ? '#f472b6' : '#1e293b' }}>
+              <div style={styles.playerTop}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f472b6' }}>
+                  Karine {karineTotal > martinTotal && karineTotal > 0 ? '👑' : ''}
+                </span>
+                <span style={styles.levelPill}>Lvl {karineLevel.level} • {karineLevel.title}</span>
+              </div>
+              <div style={styles.bigScore}>{karineTotal.toLocaleString()} <span style={styles.ptsLabel}>XP</span></div>
+              <div style={styles.xpTrack}>
+                <div
+                  style={{
+                    ...styles.xpFill,
+                    backgroundColor: '#f472b6',
+                    width: `${Math.min(100, Math.round(((karineTotal - karineLevel.prev) / (karineLevel.next - karineLevel.prev)) * 100))}%`,
                   }}
                 />
               </div>
@@ -223,7 +293,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tug-of-War Rope Bar (Always visible at top of arena) */}
+        {/* Tug-of-War Rope Bar */}
         <div style={styles.panel}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h3 style={{ margin: 0, fontSize: '1.05rem' }}>🪢 Live Tug-of-War Rope</h3>
@@ -232,146 +302,245 @@ export default function App() {
                 ? 'Dead center — tie game!'
                 : martinTotal > karineTotal
                 ? `Martin leads by ${(martinTotal - karineTotal).toLocaleString()} XP (${martinPct}%)`
-                : `Karine leads by ${(karineTotal - martinTotal).toLocaleString()} XP (${100 - martinPct}\%)`} </span> </div> <div style={styles.tugBarOuter}> <div style={{ ...styles.tugMartinSide, width: `${martinPct}%` }}>
+                : `Karine leads by ${(karineTotal - martinTotal).toLocaleString()} XP (${100 - martinPct}%)`}
+            </span>
+          </div>
+          <div style={styles.tugBarOuter}>
+            <div style={{ ...styles.tugMartinSide, width: `${martinPct}%` }}>
               {martinPct > 14 && <span style={styles.tugLabel}>Martin {martinPct}%</span>}
             </div>
             <div style={styles.tugCenterFlag}>🚩</div>
-            <div style={{ ...styles.tugKarineSide, width: `${100 - martinPct}\%` }}> {100 - martinPct > 14 && <span style={styles.tugLabel}>Karine {100 - martinPct}\%</span>} </div> </div> </div>  {/* Navigation & Active Player Switch */} <div style={styles.navBar}> <div style={styles.navTabs}> <button onClick={() => setActiveTab('arena')} style={{ ...styles.navTab, backgroundColor: activeTab === 'arena' ? '#1e293b' : 'transparent', color: activeTab === 'arena' ? '#38bdf8' : '#94a3b8' }} > ⚡ Log Workout &amp; Challenges </button> <button onClick={() => setActiveTab('calendar')} style={{ ...styles.navTab, backgroundColor: activeTab === 'calendar' ? '#1e293b' : 'transparent', color: activeTab === 'calendar' ? '#38bdf8' : '#94a3b8' }} > 🗓️ Monthly Calendar </button> <button onClick={() => setActiveTab('badges')} style={{ ...styles.navTab, backgroundColor: activeTab === 'badges' ? '#1e293b' : 'transparent', color: activeTab === 'badges' ? '#38bdf8' : '#94a3b8' }} > 🏆 Trophy Room ({BADGES.filter((b) => b.check(scores, history, challenges)).length}/{BADGES.length}) </button> </div>  <div style={styles.selectorGroup}> <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Active Player:</span> <button onClick={() => setSelectedPerson('Martin')} style={{ ...styles.personToggle, backgroundColor: selectedPerson === 'Martin' ? '#0284c7' : '#1e293b' }} > Martin </button> <button onClick={() => setSelectedPerson('Karine')} style={{ ...styles.personToggle, backgroundColor: selectedPerson === 'Karine' ? '#db2777' : '#1e293b' }} > Karine </button> </div> </div>  {/* TAB 1: WORKOUT EFFORT LOGGER + CHALLENGES */} {activeTab === 'arena' && ( <div style={styles.twoColGrid}> {/* Left Column: Effort Logger & Activity Feed */} <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}> <div style={styles.panel}> <h3 style={{ marginTop: 0, marginBottom: '6px' }}> Log a Workout for{' '} <span style={{ color: selectedPerson === 'Martin' ? '#38bdf8' : '#f472b6' }}>{selectedPerson}</span> </h3> <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#94a3b8' }}> Any workout counts! Tap an effort tier to earn XP and pull the rope. </p>  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}> {WORKOUT_TIERS.map((tier) => ( <button key={tier.id} onClick={() => logSession(selectedPerson, tier.pts, tier.label)} style={{ ...styles.tierBtn, borderColor: selectedPerson === 'Martin' ? '#0284c7' : '#db2777', }} > <span style={{ fontSize: '1.8rem' }}>{tier.icon}</span> <strong style={{ fontSize: '1rem', marginTop: '6px' }}>{tier.label}</strong> <span style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center' }}>{tier.desc}</span> <span style={{ ...styles.tierPts, color: selectedPerson === 'Martin' ? '#38bdf8' : '#f472b6' }}> +{tier.pts} XP </span> </button> ))} </div>  {/* Custom XP Entry */} <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}> <input type="text" placeholder="Activity note (e.g. 5km run, Bike, Weights)" value={customNote} onChange={(e) => setCustomNote(e.target.value)} style={{ ...styles.input, flex: '2 1 180px' }} /> <input type="number" placeholder="XP" value={customPts} onChange={(e) => setCustomPts(e.target.value)} style={{ ...styles.input, flex: '1 1 70px' }} /> <button onClick={() => { logSession(selectedPerson, customPts, customNote \vert{}\vert{} 'Custom Workout'); setCustomPts(''); setCustomNote(''); }} style={{ ...styles.primaryBtn, backgroundColor: selectedPerson === 'Martin' ? '#0284c7' : '#db2777', }} > Log XP </button> </div> </div>  {/* Recent Feed */} <div style={styles.panel}> <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}> <h3 style={{ margin: 0 }}>📋 Recent Battle Log</h3> <div style={{ display: 'flex', gap: '8px' }}> {history.length > 0 && ( <button onClick={undoLast} style={styles.smallBtn}>Undo Last</button> )} {!showResetConfirm ? ( <button onClick={() => setShowResetConfirm(true)} style={{ ...styles.smallBtn, color: '#f87171' }}> Reset </button> ) : ( <button onClick={resetAll} style={{ ...styles.smallBtn, backgroundColor: '#dc2626', color: '#fff' }}> Confirm Reset </button> )} </div> </div>  {history.length === 0 ? ( <p style={{ color: '#64748b', margin: 0 }}>No workouts logged yet. Pick an effort tier above to start!</p> ) : ( <div style={styles.feedList}> {history.slice(0, 8).map((item) => ( <div key={item.id} style={styles.feedItem}> <div> <strong style={{ color: item.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{item.person}</strong>{' '} completed <strong>{item.label}</strong>{' '} <span style={{ color: '#fbbf24', fontWeight: 700 }}>(+{item.pts} XP)</span> </div> <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.date} • {item.time}</span> </div> ))} </div> )} </div> </div>  {/* Right Column: Couples Challenges & Wagers */} <div style={styles.panel}> <h3 style={{ marginTop: 0, marginBottom: '4px', color: '#fbbf24' }}>🎲 Couples Challenges &amp; Stakes</h3> <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#94a3b8' }}> Complete head-to-head challenges to claim bonus XP and real-life rewards. </p>  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}> {challenges.map((ch) => ( <div key={ch.id} style={{ ...styles.challengeCard, opacity: ch.completedBy ? 0.65 : 1, borderColor: ch.completedBy ? '#22c55e' : '#1e293b', }} > <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}> <div> <strong style={{ fontSize: '1rem', display: 'block' }}>{ch.title}</strong> <span style={{ fontSize: '0.84rem', color: '#94a3b8' }}>{ch.desc}</span> </div> <span style={styles.rewardBadge}>+{ch.reward} XP</span> </div>  <div style={styles.stakeBox}> 🎁 <strong>Stake:</strong> {ch.stake} </div>  {ch.completedBy ? ( <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4ade80' }}> ✓ Claimed by {ch.completedBy} </div> ) : ( <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}> <button onClick={() => claimChallenge(ch.id, 'Martin')} style={{ ...styles.claimBtn, backgroundColor: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderColor: '#0284c7' }} > Martin Won </button> <button onClick={() => claimChallenge(ch.id, 'Karine')} style={{ ...styles.claimBtn, backgroundColor: 'rgba(219, 39, 119, 0.25)', color: '#f472b6', borderColor: '#db2777' }} > Karine Won </button> </div> )} </div> ))} </div>  {/* Add Custom Wager */} <form onSubmit={addCustomChallenge} style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}> <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px' }}>+ Create Custom Wager</strong> <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}> <input type="text" placeholder="Challenge (e.g. 3 workouts before Friday)" value={newChallengeTitle} onChange={(e) => setNewChallengeTitle(e.target.value)} style={styles.input} /> <div style={{ display: 'flex', gap: '8px' }}> <input type="text" placeholder="Real-life stake (e.g. Back massage)" value={newChallengeStake} onChange={(e) => setNewChallengeStake(e.target.value)} style={{ ...styles.input, flex: 1 }} /> <button type="submit" style={{ ...styles.primaryBtn, backgroundColor: '#eab308', color: '#090d16' }}> Add Wager </button> </div> </div> </form> </div> </div> )}  {/* TAB 2: MONTHLY CALENDAR */} {activeTab === 'calendar' && ( <div style={styles.twoColGrid}> <div style={styles.panel}> <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}> <button onClick={() => setCalDate(new Date(year, month - 1, 1))} style={styles.smallBtn} > ◀ Prev </button> <h2 style={{ margin: 0, fontSize: '1.3rem' }}>🗓️ {monthName}</h2> <button onClick={() => setCalDate(new Date(year, month + 1, 1))} style={styles.smallBtn} > Next ▶ </button> </div>  <div style={styles.calLegend}> <span><i style={{ ...styles.dot, backgroundColor: '#38bdf8' }} /> Martin Active</span> <span><i style={{ ...styles.dot, backgroundColor: '#f472b6' }} /> Karine Active</span> <span>👑 Both Active</span> </div>  <div style={styles.calGrid}> {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => ( <div key={d} style={styles.calDayHeader}>{d}</div> ))}  {calendarCells.map((cell, idx) => { if (!cell) return <div key={`empty-${idx}`} style={styles.calEmptyCell} />;
-                  const dayLogs = history.filter((h) => h.date === cell.dateStr);
-                  const hasMartin = dayLogs.some((l) => l.person === 'Martin');
-                  const hasKarine = dayLogs.some((l) => l.person === 'Karine');
-                  const isSelected = selectedDayStr === cell.dateStr;
+            <div style={{ ...styles.tugKarineSide, width: `${100 - martinPct}%` }}>
+              {100 - martinPct > 14 && <span style={styles.tugLabel}>Karine {100 - martinPct}%</span>}
+            </div>
+          </div>
+        </div>
 
-                  return (
+        {/* Navigation & Active Player Switch */}
+        <div style={styles.navBar}>
+          <div style={styles.navTabs}>
+            <button
+              onClick={() => setActiveTab('arena')}
+              style={{ ...styles.navTab, backgroundColor: activeTab === 'arena' ? '#1e293b' : 'transparent', color: activeTab === 'arena' ? '#38bdf8' : '#94a3b8' }}
+            >
+              ⚡ Log Workout &amp; Challenges
+            </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              style={{ ...styles.navTab, backgroundColor: activeTab === 'calendar' ? '#1e293b' : 'transparent', color: activeTab === 'calendar' ? '#38bdf8' : '#94a3b8' }}
+            >
+              🗓️ Monthly Calendar
+            </button>
+            <button
+              onClick={() => setActiveTab('badges')}
+              style={{ ...styles.navTab, backgroundColor: activeTab === 'badges' ? '#1e293b' : 'transparent', color: activeTab === 'badges' ? '#38bdf8' : '#94a3b8' }}
+            >
+              🏆 Trophy Room ({BADGES.filter((b) => b.check(scores, history, challenges)).length}/{BADGES.length})
+            </button>
+          </div>
+
+          <div style={styles.selectorGroup}>
+            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Active Player:</span>
+            <button
+              onClick={() => setSelectedPerson('Martin')}
+              style={{ ...styles.personToggle, backgroundColor: selectedPerson === 'Martin' ? '#0284c7' : '#1e293b' }}
+            >
+              Martin
+            </button>
+            <button
+              onClick={() => setSelectedPerson('Karine')}
+              style={{ ...styles.personToggle, backgroundColor: selectedPerson === 'Karine' ? '#db2777' : '#1e293b' }}
+            >
+              Karine
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 1: WORKOUT EFFORT LOGGER + CHALLENGES */}
+        {activeTab === 'arena' && (
+          <div style={styles.twoColGrid}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={styles.panel}>
+                <h3 style={{ marginTop: 0, marginBottom: '6px' }}>
+                  Log a Workout for{' '}
+                  <span style={{ color: selectedPerson === 'Martin' ? '#38bdf8' : '#f472b6' }}>{selectedPerson}</span>
+                </h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                  Any workout counts! Tap an effort tier to earn XP and pull the rope.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  {WORKOUT_TIERS.map((tier) => (
                     <button
-                      key={cell.dateStr}
-                      onClick={() => setSelectedDayStr(cell.dateStr)}
+                      key={tier.id}
+                      onClick={() => logSession(selectedPerson, tier.pts, tier.label)}
                       style={{
-                        ...styles.calCell,
-                        borderColor: isSelected ? '#fbbf24' : hasMartin && hasKarine ? '#a855f7' : '#1e293b',
-                        backgroundColor: isSelected ? '#1e293b' : '#090d16',
+                        ...styles.tierBtn,
+                        borderColor: selectedPerson === 'Martin' ? '#0284c7' : '#db2777',
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{cell.day}</span>
-                      <div style={{ display: 'flex', gap: '4px', marginTop: '6px', minHeight: '14px', alignItems: 'center' }}>
-                        {hasMartin && hasKarine ? (
-                          <span style={{ fontSize: '0.85rem' }}>👑</span>
-                        ) : (
-                          <>
-                            {hasMartin && <span style={{ ...styles.dot, backgroundColor: '#38bdf8' }} />}
-                            {hasKarine && <span style={{ ...styles.dot, backgroundColor: '#f472b6' }} />}
-                          </>
-                        )}
-                      </div>
+                      <span style={{ fontSize: '1.8rem' }}>{tier.icon}</span>
+                      <strong style={{ fontSize: '1rem', marginTop: '6px' }}>{tier.label}</strong>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center' }}>{tier.desc}</span>
+                      <span style={{ ...styles.tierPts, color: selectedPerson === 'Martin' ? '#38bdf8' : '#f472b6' }}>
+                        +{tier.pts} XP
+                      </span>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    placeholder="Activity note (e.g. 5km run, Bike, Weights)"
+                    value={customNote}
+                    onChange={(e) => setCustomNote(e.target.value)}
+                    style={{ ...styles.input, flex: '2 1 180px' }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="XP"
+                    value={customPts}
+                    onChange={(e) => setCustomPts(e.target.value)}
+                    style={{ ...styles.input, flex: '1 1 70px' }}
+                  />
+                  <button
+                    onClick={() => {
+                      logSession(selectedPerson, customPts, customNote || 'Custom Workout');
+                      setCustomPts('');
+                      setCustomNote('');
+                    }}
+                    style={{
+                      ...styles.primaryBtn,
+                      backgroundColor: selectedPerson === 'Martin' ? '#0284c7' : '#db2777',
+                    }}
+                  >
+                    Log XP
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.panel}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0 }}>📋 Recent Battle Log</h3>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {history.length > 0 && (
+                      <button onClick={undoLast} style={styles.smallBtn}>Undo Last</button>
+                    )}
+                    {!showResetConfirm ? (
+                      <button onClick={() => setShowResetConfirm(true)} style={{ ...styles.smallBtn, color: '#f87171' }}>
+                        Reset
+                      </button>
+                    ) : (
+                      <button onClick={resetAll} style={{ ...styles.smallBtn, backgroundColor: '#dc2626', color: '#fff' }}>
+                        Confirm Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {history.length === 0 ? (
+                  <p style={{ color: '#64748b', margin: 0 }}>No workouts logged yet. Pick an effort tier above to start!</p>
+                ) : (
+                  <div style={styles.feedList}>
+                    {history.slice(0, 8).map((item) => (
+                      <div key={item.id} style={styles.feedItem}>
+                        <div>
+                          <strong style={{ color: item.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{item.person}</strong>{' '}
+                          completed <strong>{item.label}</strong>{' '}
+                          <span style={{ color: '#fbbf24', fontWeight: 700 }}>(+{item.pts} XP)</span>
+                        </div>
+                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.date} • {item.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Selected Day Details */}
             <div style={styles.panel}>
-              <h3 style={{ marginTop: 0 }}>Activity for {selectedDayStr}</h3>
-              {selectedDayLogs.length === 0 ? (
-                <p style={{ color: '#64748b' }}>No workouts recorded on this date. Click any highlighted day on the calendar to inspect!</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {selectedDayLogs.map((item) => (
-                    <div key={item.id} style={styles.feedItem}>
-                      <div>
-                        <strong style={{ color: item.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{item.person}</strong>{' '}
-                        — {item.label} <span style={{ color: '#fbbf24', fontWeight: 700 }}>(+{item.pts} XP)</span>
-                      </div>
-                      <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{item.time}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+              <h3 style={{ marginTop: 0, marginBottom: '4px', color: '#fbbf24' }}>🎲 Couples Challenges &amp; Stakes</h3>
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                Complete head-to-head challenges to claim bonus XP and real-life rewards.
+              </p>
 
-        {/* TAB 3: TROPHY ROOM */}
-        {activeTab === 'badges' && (
-          <div style={styles.panel}>
-            <h2 style={{ marginTop: 0 }}>🏆 Couples Trophy Room</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '20px' }}>
-              Unlock achievements together as you level up and dominate your monthly calendar.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '16px' }}>
-              {BADGES.map((b) => {
-                const unlocked = b.check(scores, history, challenges);
-                return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                {challenges.map((ch) => (
                   <div
-                    key={b.id}
+                    key={ch.id}
                     style={{
-                      ...styles.badgeCard,
-                      opacity: unlocked ? 1 : 0.4,
-                      borderColor: unlocked ? '#fbbf24' : '#1e293b',
+                      ...styles.challengeCard,
+                      opacity: ch.completedBy ? 0.65 : 1,
+                      borderColor: ch.completedBy ? '#22c55e' : '#1e293b',
                     }}
                   >
-                    <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '8px' }}>{b.icon}</span>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem' }}>{b.title}</h4>
-                    <p style={{ margin: 0, fontSize: '0.84rem', color: '#94a3b8' }}>{b.desc}</p>
-                    <div style={{ marginTop: '12px', fontSize: '0.75rem', fontWeight: 800, color: unlocked ? '#fbbf24' : '#64748b' }}>
-                      {unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div>
+                        <strong style={{ fontSize: '1rem', display: 'block' }}>{ch.title}</strong>
+                        <span style={{ fontSize: '0.84rem', color: '#94a3b8' }}>{ch.desc}</span>
+                      </div>
+                      <span style={styles.rewardBadge}>+{ch.reward} XP</span>
                     </div>
+
+                    <div style={styles.stakeBox}>
+                      🎁 <strong>Stake:</strong> {ch.stake}
+                    </div>
+
+                    {ch.completedBy ? (
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4ade80' }}>
+                        ✓ Claimed by {ch.completedBy}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          onClick={() => claimChallenge(ch.id, 'Martin')}
+                          style={{ ...styles.claimBtn, backgroundColor: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderColor: '#0284c7' }}
+                        >
+                          Martin Won
+                        </button>
+                        <button
+                          onClick={() => claimChallenge(ch.id, 'Karine')}
+                          style={{ ...styles.claimBtn, backgroundColor: 'rgba(219, 39, 119, 0.25)', color: '#f472b6', borderColor: '#db2777' }}
+                        >
+                          Karine Won
+                        </button>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              <form onSubmit={addCustomChallenge} style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
+                <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px' }}>+ Create Custom Wager</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Challenge (e.g. 3 workouts before Friday)"
+                    value={newChallengeTitle}
+                    onChange={(e) => setNewChallengeTitle(e.target.value)}
+                    style={styles.input}
+                  />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Real-life stake (e.g. Back massage)"
+                      value={newChallengeStake}
+                      onChange={(e) => setNewChallengeStake(e.target.value)}
+                      style={{ ...styles.input, flex: 1 }}
+                    />
+                    <button type="submit" style={{ ...styles.primaryBtn, backgroundColor: '#eab308', color: '#090d16' }}>
+                      Add Wager
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
 
-const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#090d16', backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #090d16 60%)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '24px 20px', boxSizing: 'border-box' },
-  container: { maxWidth: '1320px', margin: '0 auto' },
-  header: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '20px', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #1e293b' },
-  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: '999px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '8px' },
-  title: { fontSize: '2.2rem', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' },
-  subtitle: { margin: 0, color: '#94a3b8', fontSize: '1rem' },
-  playerCardsRow: { display: 'flex', flexWrap: 'wrap', gap: '14px' },
-  playerCard: { backgroundColor: '#111827', border: '2px solid #1e293b', borderRadius: '14px', padding: '14px 18px', minWidth: '215px' },
-  playerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' },
-  levelPill: { fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', backgroundColor: '#1e293b', color: '#cbd5e1' },
-  bigScore: { fontSize: '1.8rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '8px' },
-  ptsLabel: { fontSize: '0.85rem', color: '#64748b', fontWeight: 700 },
-  xpTrack: { height: '6px', backgroundColor: '#1e293b', borderRadius: '999px', overflow: 'hidden', marginBottom: '6px' },
-  xpFill: { height: '100%', borderRadius: '999px', transition: 'width 0.3s ease' },
-  streakRow: { display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94a3b8' },
-  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'rgba(251, 191, 36, 0.12)', border: '1px solid rgba(251, 191, 36, 0.35)', color: '#fde047', padding: '12px 18px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.95rem' },
-  panel: { backgroundColor: '#111827', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)' },
-  tugBarOuter: { display: 'flex', height: '30px', backgroundColor: '#1e293b', borderRadius: '999px', position: 'relative', overflow: 'hidden', border: '1px solid #334155' },
-  tugMartinSide: { backgroundColor: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '14px', transition: 'width 0.4s ease' },
-  tugKarineSide: { backgroundColor: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '14px', transition: 'width 0.4s ease' },
-  tugCenterFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, fontSize: '1.15rem' },
-  tugLabel: { fontSize: '0.78rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
-  navBar: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '20px', backgroundColor: '#111827', padding: '8px 16px', borderRadius: '14px', border: '1px solid #1e293b' },
-  navTabs: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  navTab: { border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' },
-  selectorGroup: { display: 'flex', alignItems: 'center', gap: '8px' },
-  personToggle: { border: 'none', padding: '7px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', color: '#fff', cursor: 'pointer' },
-  twoColGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' },
-  tierBtn: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '16px 12px', backgroundColor: '#090d16', border: '2px solid #334155', borderRadius: '14px', color: '#f8fafc', cursor: 'pointer' },
-  tierPts: { fontWeight: 800, fontSize: '0.95rem', marginTop: '4px' },
-  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#090d16', color: '#fff', fontSize: '0.9rem' },
-  primaryBtn: { padding: '10px 16px', borderRadius: '8px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' },
-  smallBtn: { padding: '6px 12px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' },
-  feedList: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' },
-  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', padding: '10px 12px', backgroundColor: '#090d16', borderRadius: '8px', fontSize: '0.9rem' },
-  challengeCard: { backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' },
-  rewardBadge: { padding: '3px 8px', borderRadius: '999px', backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', fontSize: '0.78rem', fontWeight: 800, whiteSpace: 'nowrap' },
-  stakeBox: { fontSize: '0.85rem', color: '#e2e8f0', backgroundColor: '#111827', padding: '6px 10px', borderRadius: '8px' },
-  claimBtn: { flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
-  calLegend: { display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#94a3b8', marginBottom: '12px', alignItems: 'center' },
-  dot: { display: 'inline-block', width: '9px', height: '9px', borderRadius: '50%' },
-  calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' },
-  calDayHeader: { textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', paddingBottom: '4px' },
-  calEmptyCell: { height: '56px' },
-  calCell: { height: '56px', borderRadius: '10px', border: '1px solid #1e293b', color: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' },
-  badgeCard: { backgroundColor: '#090d16', border: '2px solid #1e293b', borderRadius: '14px', padding: '18px', textAlign: 'center' },
-};
+        {/* TAB 2: MONTHLY CALENDAR */}
+        {activeTab === 'calendar' && (
+          <div style={styles.twoColGrid}>
+            <div style={styles.panel}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <button onClick={() => setCalDate(new Date(year, month
