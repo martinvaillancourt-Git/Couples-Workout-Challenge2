@@ -15,40 +15,58 @@ const TROPHIES = [
   { id: 'night_owl', title: 'Night Owl', desc: 'Logged a session after 8:00 PM', icon: '🌙', check: (m, k, h) => h.some(i => i.hour >= 20) },
 ];
 
+function getRank(reps) {
+  if (reps >= 2500) return { title: 'Titan Legend', color: '#fbbf24' };
+  if (reps >= 1000) return { title: 'Iron Contender', color: '#38bdf8' };
+  if (reps >= 400) return { title: 'Rivalry Warrior', color: '#a855f7' };
+  if (reps >= 100) return { title: 'Active Challenger', color: '#4ade80' };
+  return { title: 'Rookie', color: '#94a3b8' };
+}
+
 export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
   
-  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_pure_scores')) || { Martin: 0, Karine: 0 });
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_pure_history')) || []);
+  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_scores')) || { Martin: 0, Karine: 0 });
+  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_history')) || []);
+  const [taunts, setTaunts] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_taunts')) || [
+    { id: 1, person: 'Martin', text: 'Catch me if you can!', time: '10:00 AM' }
+  ]);
   
   const [repInput, setRepInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
-  const [taunt, setTaunt] = useState('');
+  const [tauntInput, setTauntInput] = useState('');
+  const [blitzActive, setBlitzActive] = useState(false);
+  const [dailyTaunt, setDailyTaunt] = useState('');
   
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  useEffect(() => { localStorage.setItem('mk_pure_scores', JSON.stringify(scores)); }, [scores]);
-  useEffect(() => { localStorage.setItem('mk_pure_history', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('mk_gamified_scores', JSON.stringify(scores)); }, [scores]);
+  useEffect(() => { localStorage.setItem('mk_gamified_history', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('mk_gamified_taunts', JSON.stringify(taunts)); }, [taunts]);
 
   useEffect(() => {
     const hr = new Date().getHours();
-    if (hr === 12) setTaunt('🕛 Noon Check-in: Half the day is gone! Time to log some reps and pull the rope.');
-    else if (hr === 18) setTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
+    if (hr === 12) setDailyTaunt('🕛 Noon Check-in: Half the day is gone! Time to log some reps and pull the rope.');
+    else if (hr === 18) setDailyTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
   }, []);
 
   const logReps = (who, count, label) => {
-    const num = Number(count);
-    if (!num || num <= 0) return;
+    const rawNum = Number(count);
+    if (!rawNum || rawNum <= 0) return;
 
-    setScores(prev => ({ ...prev, [who]: prev[who] + num }));
+    const finalReps = blitzActive ? rawNum * 2 : rawNum;
+
+    setScores(prev => ({ ...prev, [who]: prev[who] + finalReps }));
     const now = new Date();
     const entry = {
       id: Date.now(),
       person: who,
-      reps: num,
+      reps: finalReps,
+      rawReps: rawNum,
+      blitz: blitzActive,
       label: label || 'Workout Reps',
       date: now.toISOString().split('T')[0],
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -57,6 +75,19 @@ export default function App() {
     setHistory(prev => [entry, ...prev]);
     setRepInput('');
     setNoteInput('');
+  };
+
+  const postTaunt = () => {
+    if (!tauntInput.trim()) return;
+    const now = new Date();
+    const newT = {
+      id: Date.now(),
+      person,
+      text: tauntInput.trim(),
+      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setTaunts(prev => [newT, ...prev.slice(0, 4)]);
+    setTauntInput('');
   };
 
   const undoLast = () => {
@@ -70,6 +101,9 @@ export default function App() {
   const karineReps = scores.Karine;
   const totalReps = martinReps + karineReps;
   const martinPct = totalReps === 0 ? 50 : Math.round((martinReps / totalReps) * 100);
+
+  const martinRank = getRank(martinReps);
+  const karineRank = getRank(karineReps);
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
@@ -91,33 +125,47 @@ export default function App() {
           <div>
             <span style={s.badge}>COUPLES REPS ARENA</span>
             <h1 style={s.title}>Martin vs. Karine</h1>
-            <p style={s.subtitle}>Pure Repetition Counter &amp; Big Calendar Grid</p>
+            <p style={s.subtitle}>Pure Repetition Counter &amp; Gamified Showdown</p>
           </div>
           <div style={s.scoreCardsRow}>
             <div style={{ ...s.playerCard, borderColor: martinReps >= karineReps ? '#38bdf8' : '#1e293b' }}>
-              <div style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>Martin {martinReps > karineReps && '👑'}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem' }}>Martin {martinReps > karineReps && '👑'}</span>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: martinRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>{martinRank.title}</span>
+              </div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
             <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }}>
-              <div style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>Karine {karineReps > martinReps && '👑'}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem' }}>Karine {karineReps > martinReps && '👑'}</span>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: karineRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>{karineRank.title}</span>
+              </div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
           </div>
         </header>
 
-        {taunt && (
+        {dailyTaunt && (
           <div style={s.tauntBanner}>
-            <span style={{ fontSize: '1.2rem' }}>📣</span> <div>{taunt}</div>
+            <span style={{ fontSize: '1.2rem' }}>📣</span> <div>{dailyTaunt}</div>
           </div>
         )}
 
-        {/* Tug of War */}
+        {/* Tug of War with Blitz Banner */}
         <div style={s.panel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.88rem', color: '#94a3b8' }}>
-            <span style={{ fontWeight: 600 }}>🪢 Live Tug-of-War Reps Bar</span>
-            <span style={{ fontWeight: 600, color: '#f8fafc' }}>
-              {martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#94a3b8' }}>🪢 Live Tug-of-War Reps Bar</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button 
+                onClick={() => setBlitzActive(!blitzActive)} 
+                style={{ ...s.blitzBtn, background: blitzActive ? '#ef4444' : '#1e293b', borderColor: blitzActive ? '#fca5a5' : '#334155' }}
+              >
+                {blitzActive ? '⚡ 2X BLITZ ACTIVE!' : '⚡ Enable 2x Blitz'}
+              </button>
+              <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#f8fafc' }}>
+                {martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}
+              </span>
+            </div>
           </div>
           <div style={s.tugOuter}>
             <div style={{ ...s.tugM, width: `${martinPct}%` }}>{martinPct > 12 && `Martin ${martinPct}%`}</div>
@@ -142,11 +190,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* TAB 1: LOGGER */}
+        {/* TAB 1: LOGGER & TAUNT WALL */}
         {tab === 'arena' && (
           <div style={s.grid2}>
             <div style={s.panel}>
-              <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
+              <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span> {blitzActive && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>(2X Blitz ON!)</span>}</h3>
               <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Tap a quick add button or enter your custom rep count below:</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -176,8 +224,31 @@ export default function App() {
                     onClick={() => logReps(person, repInput, noteInput || 'General Reps')}
                     style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}
                   >
-                    Add Reps
+                    Add {blitzActive ? '(2x)' : ''} Reps
                   </button>
+                </div>
+              </div>
+
+              {/* TAUNT WALL */}
+              <div style={{ marginTop: '24px', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#fbbf24' }}>💬 Couple's Taunt Wall</h4>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder={`Drop a taunt as ${person}...`}
+                    value={tauntInput}
+                    onChange={e => setTauntInput(e.target.value)}
+                    style={{ ...s.input, flex: 1, fontSize: '0.85rem', padding: '8px 12px' }}
+                  />
+                  <button onClick={postTaunt} style={{ ...s.smallBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}>Send</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+                  {taunts.map(t => (
+                    <div key={t.id} style={{ background: '#090d16', padding: '8px 10px', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span><strong style={{ color: t.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{t.person}:</strong> {t.text}</span>
+                      <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{t.time}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -196,11 +267,11 @@ export default function App() {
               </div>
 
               {history.length === 0 ? <p style={{ color: '#64748b' }}>No reps logged yet. Start crushing reps!</p> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
-                  {history.slice(0, 8).map(i => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
+                  {history.slice(0, 10).map(i => (
                     <div key={i.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps <span style={{ color: '#94a3b8' }}>({i.label})</span>
+                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps {i.blitz && <span style={{ color: '#ef4444', fontWeight: 800 }}>⚡2x</span>} <span style={{ color: '#94a3b8' }}>({i.label})</span>
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{i.time}</span>
                     </div>
@@ -321,6 +392,24 @@ const s = {
   title: { fontSize: '2.1rem', fontWeight: 800, margin: '6px 0 4px 0', letterSpacing: '-0.02em' },
   subtitle: { fontSize: '0.95rem', color: '#94a3b8', margin: 0 },
   scoreCardsRow: { display: 'flex', gap: '14px' },
-  playerCard: { background: '#111827', border: '2px solid', borderRadius: '14px', padding: '14px 20px', minWidth: '160px', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.3)' },
+  playerCard: { background: '#111827', border: '2px solid', borderRadius: '14px', padding: '14px 20px', minWidth: '170px', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.3)' },
   scoreNum: { fontSize: '1.6rem', fontWeight: 800 },
-  unit: { fontSize: '0.75rem', color: '#64
+  unit: { fontSize: '0.75rem', color: '#64748b', fontWeight: 600 },
+  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fde047', padding: '14px 18px', borderRadius: '14px', marginBottom: '20px', fontSize: '0.95rem', fontWeight: 500 },
+  panel: { background: '#111827', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)' },
+  tugOuter: { display: 'flex', height: '32px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden', border: '1px solid #334155' },
+  tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '14px', fontSize: '0.78rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
+  tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '14px', fontSize: '0.78rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
+  tugFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, fontSize: '1.1rem' },
+  nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: '#111827', padding: '10px 18px', borderRadius: '14px', border: '1px solid #1e293b', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
+  navBtn: { border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', transition: 'background 0.2s' },
+  toggleBtn: { border: 'none', padding: '7px 16px', borderRadius: '10px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' },
+  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' },
+  quickBtn: { background: '#090d16', border: '1px solid #334155', color: '#f8fafc', padding: '12px 14px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', textAlign: 'center', transition: 'border-color 0.2s' },
+  blitzBtn: { border: '1px solid', borderRadius: '8px', color: '#fff', padding: '5px 10px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' },
+  input: { padding: '12px 14px', borderRadius: '10px', border: '1px solid #334155', background: '#090d16', color: '#fff', fontSize: '0.95rem', outline: 'none' },
+  primaryBtn: { padding: '12px 20px', borderRadius: '10px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
+  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '12px 14px', borderRadius: '10px', fontSize: '0.92rem', border: '1px solid #1e293b' },
+  calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' },
+  smallBtn: { background: '#1e293b', border: '1px solid #334155', color: '#fff', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }
+};
