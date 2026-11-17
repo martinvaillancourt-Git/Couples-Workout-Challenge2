@@ -12,7 +12,7 @@ const TROPHIES = [
     return Object.values(dates).some(set => set.size >= 2);
   }},
   { id: 'ten_workouts', title: 'Consistency Champ', desc: 'Completed 10 separate logging sessions', icon: '📅', check: (m, k, h) => h.length >= 10 },
-  { id: 'night_owl', title: 'Night Owl', desc: 'Logged a session after 8:00 PM', icon: '🌙', check: (m, k, h) => h.some(i => i.hour >= 20) },
+  { id: 'thief', title: 'Rep Stealer', desc: 'Successfully claimed a Wednesday or Sunday Rep Steal', icon: '🦹‍♂️', check: (m, k, h) => h.some(i => i.isSteal) },
 ];
 
 function getRank(reps) {
@@ -27,25 +27,22 @@ export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
   
-  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_scores')) || { Martin: 0, Karine: 0 });
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_history')) || []);
-  const [taunts, setTaunts] = useState(() => JSON.parse(localStorage.getItem('mk_gamified_taunts')) || [
-    { id: 1, person: 'Martin', text: 'Catch me if you can!', time: '10:00 AM' }
-  ]);
+  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_animated_scores')) || { Martin: 0, Karine: 0 });
+  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_animated_history')) || []);
+  const [steals, setSteals] = useState(() => JSON.parse(localStorage.getItem('mk_animated_steals')) || {}); // tracks claimed steals by date key
   
   const [repInput, setRepInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
-  const [tauntInput, setTauntInput] = useState('');
-  const [blitzActive, setBlitzActive] = useState(false);
   const [dailyTaunt, setDailyTaunt] = useState('');
+  const [animateScore, setAnimateScore] = useState(null);
   
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  useEffect(() => { localStorage.setItem('mk_gamified_scores', JSON.stringify(scores)); }, [scores]);
-  useEffect(() => { localStorage.setItem('mk_gamified_history', JSON.stringify(history)); }, [history]);
-  useEffect(() => { localStorage.setItem('mk_gamified_taunts', JSON.stringify(taunts)); }, [taunts]);
+  useEffect(() => { localStorage.setItem('mk_animated_scores', JSON.stringify(scores)); }, [scores]);
+  useEffect(() => { localStorage.setItem('mk_animated_history', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('mk_animated_steals', JSON.stringify(steals)); }, [steals]);
 
   useEffect(() => {
     const hr = new Date().getHours();
@@ -53,21 +50,34 @@ export default function App() {
     else if (hr === 18) setDailyTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
   }, []);
 
-  const logReps = (who, count, label) => {
-    const rawNum = Number(count);
-    if (!rawNum || rawNum <= 0) return;
+  // Check if current time is Wednesday or Sunday around 1:00 PM (13:00 - 14:00)
+  const nowObj = new Date();
+  const dayOfWeek = nowObj.getDay(); // 3 = Wed, 0 = Sun
+  const currentHour = nowObj.getHours();
+  const todayDateStr = nowObj.toISOString().split('T')[0];
+  const isStealWindow = (dayOfWeek === 3 || dayOfWeek === 0) && currentHour === 13;
+  const stealKey = `${todayDateStr}-${dayOfWeek === 3 ? 'Wed' : 'Sun'}`;
+  const stealClaimedBy = steals[stealKey];
 
-    const finalReps = blitzActive ? rawNum * 2 : rawNum;
+  const triggerAnimation = (who) => {
+    setAnimateScore(who);
+    setTimeout(() => setAnimateScore(null), 600);
+  };
 
-    setScores(prev => ({ ...prev, [who]: prev[who] + finalReps }));
+  const logReps = (who, count, label, isSteal = false) => {
+    const num = Number(count);
+    if (!num || num <= 0) return;
+
+    setScores(prev => ({ ...prev, [who]: prev[who] + num }));
+    triggerAnimation(who);
+
     const now = new Date();
     const entry = {
       id: Date.now(),
       person: who,
-      reps: finalReps,
-      rawReps: rawNum,
-      blitz: blitzActive,
+      reps: num,
       label: label || 'Workout Reps',
+      isSteal,
       date: now.toISOString().split('T')[0],
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
@@ -77,17 +87,30 @@ export default function App() {
     setNoteInput('');
   };
 
-  const postTaunt = () => {
-    if (!tauntInput.trim()) return;
+  const claimSteal = (who) => {
+    if (stealClaimedBy) return;
+    setSteals(prev => ({ ...prev, [stealKey]: who }));
+    // Add 50 bonus reps and subtract 50 from opponent for the ultimate steal effect!
+    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
+    setScores(prev => ({
+      ...prev,
+      [who]: prev[who] + 50,
+      [opponent]: Math.max(0, prev[opponent] - 50)
+    }));
+    triggerAnimation(who);
+
     const now = new Date();
-    const newT = {
+    const entry = {
       id: Date.now(),
-      person,
-      text: tauntInput.trim(),
-      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      person: who,
+      reps: 50,
+      label: '⚡ 1PM Rep Steal (+50 / -50)',
+      isSteal: true,
+      date: now.toISOString().split('T')[0],
+      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      hour: now.getHours()
     };
-    setTaunts(prev => [newT, ...prev.slice(0, 4)]);
-    setTauntInput('');
+    setHistory(prev => [entry, ...prev]);
   };
 
   const undoLast = () => {
@@ -119,23 +142,39 @@ export default function App() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @keyframes pulseScore {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.08); filter: brightness(1.2); }
+          100% { transform: scale(1); }
+        }
+        @keyframes flagSlide {
+          0% { transform: translate(-50%, -50%) scale(0.9); }
+          50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .pulse-martin { animation: pulseScore 0.5s ease-in-out; }
+        .pulse-karine { animation: pulseScore 0.5s ease-in-out; }
+        .flag-anim { animation: flagSlide 0.5s ease-in-out; }
+      `}</style>
+
       <div style={s.container}>
         {/* Header */}
         <header style={s.header}>
           <div>
             <span style={s.badge}>COUPLES REPS ARENA</span>
             <h1 style={s.title}>Martin vs. Karine</h1>
-            <p style={s.subtitle}>Pure Repetition Counter &amp; Gamified Showdown</p>
+            <p style={s.subtitle}>Pure Repetition Counter &amp; Animated Showdown</p>
           </div>
           <div style={s.scoreCardsRow}>
-            <div style={{ ...s.playerCard, borderColor: martinReps >= karineReps ? '#38bdf8' : '#1e293b' }}>
+            <div style={{ ...s.playerCard, borderColor: martinReps >= karineReps ? '#38bdf8' : '#1e293b' }} className={animateScore === 'Martin' ? 'pulse-martin' : ''}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                 <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.95rem' }}>Martin {martinReps > karineReps && '👑'}</span>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: martinRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>{martinRank.title}</span>
               </div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
             </div>
-            <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }}>
+            <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }} className={animateScore === 'Karine' ? 'pulse-karine' : ''}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                 <span style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.95rem' }}>Karine {karineReps > martinReps && '👑'}</span>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: karineRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>{karineRank.title}</span>
@@ -151,26 +190,39 @@ export default function App() {
           </div>
         )}
 
-        {/* Tug of War with Blitz Banner */}
-        <div style={s.panel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#94a3b8' }}>🪢 Live Tug-of-War Reps Bar</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button 
-                onClick={() => setBlitzActive(!blitzActive)} 
-                style={{ ...s.blitzBtn, background: blitzActive ? '#ef4444' : '#1e293b', borderColor: blitzActive ? '#fca5a5' : '#334155' }}
-              >
-                {blitzActive ? '⚡ 2X BLITZ ACTIVE!' : '⚡ Enable 2x Blitz'}
-              </button>
-              <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#f8fafc' }}>
-                {martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}
+        {/* 1PM STEAL BANNER (Active Wed/Sun at 1 PM or testable anytime) */}
+        <div style={{ ...s.stealBanner, borderColor: isStealWindow ? '#f59e0b' : '#334155', background: isStealWindow ? 'rgba(245, 158, 11, 0.15)' : '#111827' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚡</span>
+            <div>
+              <strong style={{ color: '#fbbf24', display: 'block' }}>Wednesday &amp; Sunday 1:00 PM Rep Steal</strong>
+              <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                {stealClaimedBy ? `Claimed for today by ${stealClaimedBy}! 🦹‍♂️` : isStealWindow ? 'Active now! Claim 50 reps and steal from your partner!' : 'Opens Wednesday & Sunday at 1:00 PM.'}
               </span>
             </div>
           </div>
+          {!stealClaimedBy && (
+            <button 
+              onClick={() => claimSteal(person)} 
+              style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777', fontSize: '0.85rem', padding: '8px 14px' }}
+            >
+              Claim Steal as {person} (+50)
+            </button>
+          )}
+        </div>
+
+        {/* Tug of War with Animated Flag */}
+        <div style={s.panel}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#94a3b8' }}>🪢 Live Tug-of-War Reps Bar</span>
+            <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#f8fafc' }}>
+              {martinReps === karineReps ? 'Tie game!' : martinReps > karineReps ? `Martin leads by ${(martinReps - karineReps).toLocaleString()} reps` : `Karine leads by ${(karineReps - martinReps).toLocaleString()} reps`}
+            </span>
+          </div>
           <div style={s.tugOuter}>
-            <div style={{ ...s.tugM, width: `${martinPct}%` }}>{martinPct > 12 && `Martin ${martinPct}%`}</div>
-            <div style={s.tugFlag}>🚩</div>
-            <div style={{ ...s.tugK, width: `${100 - martinPct}%` }}>{100 - martinPct > 12 && `Karine ${100 - martinPct}%`}</div>
+            <div style={{ ...s.tugM, width: `${martinPct}%`, transition: 'width 0.5s ease-in-out' }}>{martinPct > 12 && `Martin ${martinPct}%`}</div>
+            <div style={s.tugFlag} className="flag-anim">🚩</div>
+            <div style={{ ...s.tugK, width: `${100 - martinPct}%`, transition: 'width 0.5s ease-in-out' }}>{100 - martinPct > 12 && `Karine ${100 - martinPct}%`}</div>
           </div>
         </div>
 
@@ -190,11 +242,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* TAB 1: LOGGER & TAUNT WALL */}
+        {/* TAB 1: LOGGER */}
         {tab === 'arena' && (
           <div style={s.grid2}>
             <div style={s.panel}>
-              <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span> {blitzActive && <span style={{ color: '#ef4444', fontSize: '0.85rem' }}>(2X Blitz ON!)</span>}</h3>
+              <h3 style={{ marginTop: 0, marginBottom: '6px' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
               <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '16px' }}>Tap a quick add button or enter your custom rep count below:</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -224,31 +276,8 @@ export default function App() {
                     onClick={() => logReps(person, repInput, noteInput || 'General Reps')}
                     style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}
                   >
-                    Add {blitzActive ? '(2x)' : ''} Reps
+                    Add Reps
                   </button>
-                </div>
-              </div>
-
-              {/* TAUNT WALL */}
-              <div style={{ marginTop: '24px', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#fbbf24' }}>💬 Couple's Taunt Wall</h4>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <input
-                    type="text"
-                    placeholder={`Drop a taunt as ${person}...`}
-                    value={tauntInput}
-                    onChange={e => setTauntInput(e.target.value)}
-                    style={{ ...s.input, flex: 1, fontSize: '0.85rem', padding: '8px 12px' }}
-                  />
-                  <button onClick={postTaunt} style={{ ...s.smallBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}>Send</button>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
-                  {taunts.map(t => (
-                    <div key={t.id} style={{ background: '#090d16', padding: '8px 10px', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between' }}>
-                      <span><strong style={{ color: t.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{t.person}:</strong> {t.text}</span>
-                      <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{t.time}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -261,7 +290,7 @@ export default function App() {
                   {!resetConfirm ? (
                     <button onClick={() => setResetConfirm(true)} style={{ ...s.smallBtn, color: '#f87171' }}>Reset</button>
                   ) : (
-                    <button onClick={() => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm Reset</button>
+                    <button onClick={() => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setSteals({}); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm Reset</button>
                   )}
                 </div>
               </div>
@@ -271,7 +300,7 @@ export default function App() {
                   {history.slice(0, 10).map(i => (
                     <div key={i.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps {i.blitz && <span style={{ color: '#ef4444', fontWeight: 800 }}>⚡2x</span>} <span style={{ color: '#94a3b8' }}>({i.label})</span>
+                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps {i.isSteal && <span style={{ color: '#fbbf24', fontWeight: 800 }}>⚡Steal</span>} <span style={{ color: '#94a3b8' }}>({i.label})</span>
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{i.time}</span>
                     </div>
@@ -395,7 +424,8 @@ const s = {
   playerCard: { background: '#111827', border: '2px solid', borderRadius: '14px', padding: '14px 20px', minWidth: '170px', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.3)' },
   scoreNum: { fontSize: '1.6rem', fontWeight: 800 },
   unit: { fontSize: '0.75rem', color: '#64748b', fontWeight: 600 },
-  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fde047', padding: '14px 18px', borderRadius: '14px', marginBottom: '20px', fontSize: '0.95rem', fontWeight: 500 },
+  tauntBanner: { display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fde047', padding: '14px 18px', borderRadius: '14px', marginBottom: '16px', fontSize: '0.95rem', fontWeight: 500 },
+  stealBanner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', border: '2px solid', borderRadius: '16px', padding: '16px 20px', marginBottom: '20px', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.3)' },
   panel: { background: '#111827', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)' },
   tugOuter: { display: 'flex', height: '32px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden', border: '1px solid #334155' },
   tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '14px', fontSize: '0.78rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
@@ -406,7 +436,6 @@ const s = {
   toggleBtn: { border: 'none', padding: '7px 16px', borderRadius: '10px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' },
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' },
   quickBtn: { background: '#090d16', border: '1px solid #334155', color: '#f8fafc', padding: '12px 14px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', textAlign: 'center', transition: 'border-color 0.2s' },
-  blitzBtn: { border: '1px solid', borderRadius: '8px', color: '#fff', padding: '5px 10px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' },
   input: { padding: '12px 14px', borderRadius: '10px', border: '1px solid #334155', background: '#090d16', color: '#fff', fontSize: '0.95rem', outline: 'none' },
   primaryBtn: { padding: '12px 20px', borderRadius: '10px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
   feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '12px 14px', borderRadius: '10px', fontSize: '0.92rem', border: '1px solid #1e293b' },
