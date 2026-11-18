@@ -209,6 +209,7 @@ export default function App() {
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [celebration, setCelebration] = useState(null);
 
   // Real-time cloud sync with a 3-second connection timeout fallback
   useEffect(() => {
@@ -398,6 +399,7 @@ export default function App() {
   const martinRank = getRank(martinReps);
   const karineRank = getRank(karineReps);
   const streaks = computeStreaks(history);
+  const unlockedTrophies = TROPHIES.filter(t => t.check(martinReps, karineReps, history, streaks, weeklyWins));
 
   // Weekly Showdown (Monday–Sunday)
   const thisWeekStart = getMondayStr(todayDateStr);
@@ -414,6 +416,40 @@ export default function App() {
     const updated = weeklyWins.map(w => w.weekStart === weekStart ? { ...w, ...patch } : w);
     saveToCloud(scores, history, steals, updated);
   };
+
+  // Milestone celebration: when a new trophy is unlocked or a player ranks
+  // up, a dancing figure pops up for a few seconds. Fires for milestones
+  // earned on this phone or synced in from the other player's phone.
+  const prevUnlockedIdsRef = useRef(null);
+  const prevRanksRef = useRef(null);
+  const celebrateTimerRef = useRef(null);
+  const showCelebration = (c) => {
+    setCelebration(c);
+    if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current);
+    celebrateTimerRef.current = setTimeout(() => setCelebration(null), 5000);
+  };
+  useEffect(() => {
+    const ids = unlockedTrophies.map(t => t.id);
+    if (prevUnlockedIdsRef.current === null) {
+      prevUnlockedIdsRef.current = ids;
+      prevRanksRef.current = { Martin: martinRank.title, Karine: karineRank.title };
+      return;
+    }
+    const newOnes = unlockedTrophies.filter(t => !prevUnlockedIdsRef.current.includes(t.id));
+    prevUnlockedIdsRef.current = ids;
+    if (newOnes.length > 0) {
+      const t = newOnes[0];
+      showCelebration({ emoji: person === 'Martin' ? '🕺' : '💃', title: `🎉 New trophy: ${t.title}!`, subtitle: t.desc });
+      return;
+    }
+    const prevRanks = prevRanksRef.current || {};
+    prevRanksRef.current = { Martin: martinRank.title, Karine: karineRank.title };
+    if (prevRanks.Martin && prevRanks.Martin !== martinRank.title) {
+      showCelebration({ emoji: '🕺', title: '🎉 Martin ranked up!', subtitle: `Now ${martinRank.title}` });
+    } else if (prevRanks.Karine && prevRanks.Karine !== karineRank.title) {
+      showCelebration({ emoji: '💃', title: '🎉 Karine ranked up!', subtitle: `Now ${karineRank.title}` });
+    }
+  }, [unlockedTrophies, martinRank.title, karineRank.title]);
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
@@ -440,6 +476,22 @@ export default function App() {
           0% { transform: translate(-50%, -50%) scale(0.9); }
           50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
           100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes danceMove {
+          0%, 100% { transform: translateY(0) rotate(-10deg); }
+          25% { transform: translateY(-16px) rotate(10deg) scale(1.08); }
+          50% { transform: translateY(0) rotate(-10deg); }
+          75% { transform: translateY(-16px) rotate(10deg) scale(1.08); }
+        }
+        @keyframes floatHeart {
+          0% { transform: translateY(0) scale(0.8); opacity: 0; }
+          20% { opacity: 1; }
+          100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+        }
+        @keyframes popIn {
+          0% { transform: scale(0.6); opacity: 0; }
+          60% { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
         }
         .pulse-martin { animation: pulseScore 0.5s ease-in-out; }
         .pulse-karine { animation: pulseScore 0.5s ease-in-out; }
@@ -773,6 +825,21 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {celebration && (
+          <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, pointerEvents: 'none', textAlign: 'center' }}>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <span style={{ position: 'absolute', left: '-14px', top: '6px', fontSize: '1rem', animation: 'floatHeart 2s ease-out infinite' }}>❤️</span>
+              <span style={{ position: 'absolute', right: '-14px', top: '0px', fontSize: '1rem', animation: 'floatHeart 2s ease-out 0.6s infinite' }}>✨</span>
+              <span style={{ position: 'absolute', right: '-22px', top: '14px', fontSize: '0.85rem', animation: 'floatHeart 2s ease-out 1.1s infinite' }}>❤️</span>
+              <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
+            </div>
+            <div style={{ background: 'rgba(17,24,39,0.95)', border: '2px solid #fbbf24', borderRadius: '14px', padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', whiteSpace: 'nowrap' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fbbf24' }}>{celebration.title}</div>
+              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{celebration.subtitle}</div>
             </div>
           </div>
         )}
