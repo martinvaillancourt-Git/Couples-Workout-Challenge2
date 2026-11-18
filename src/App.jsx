@@ -100,6 +100,14 @@ const MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
+// Alley's rotating pictures for the motivation pop-up (grows to 12)
+const ALLEY_PICS = [
+  '/alley-pics/alley-01.webp',
+  '/alley-pics/alley-02.webp',
+  '/alley-pics/alley-03.webp',
+  '/alley-pics/alley-04.webp',
+];
+
 function getRank(reps) {
   if (reps >= 2500) return { title: 'Titan Legend', color: '#fbbf24' };
   if (reps >= 1000) return { title: 'Iron Contender', color: '#38bdf8' };
@@ -228,6 +236,7 @@ export default function App() {
   const [celebration, setCelebration] = useState(null);
   const [heartsKey, setHeartsKey] = useState(0);
   const [motivation, setMotivation] = useState(null);
+  const [motivationPic, setMotivationPic] = useState(ALLEY_PICS[0]);
 
   // Real-time cloud sync with a 3-second connection timeout fallback
   useEffect(() => {
@@ -538,7 +547,10 @@ export default function App() {
   };
 
   // Alley pops up full screen from time to time (Martin only, max once a day)
-  const showMotivation = () => setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
+  const showMotivation = () => {
+    setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
+    setMotivationPic(ALLEY_PICS[Math.floor(Math.random() * ALLEY_PICS.length)]);
+  };
   useEffect(() => {
     if (person !== 'Martin') return;
     const today = new Date().toISOString().split('T')[0];
@@ -641,11 +653,6 @@ export default function App() {
                   style={{ background: notifState === 'on' ? 'rgba(74,222,128,0.15)' : notifState === 'denied' ? 'rgba(248,113,113,0.12)' : 'rgba(56,189,248,0.12)', color: notifState === 'on' ? '#4ade80' : notifState === 'denied' ? '#f87171' : '#38bdf8', border: '1px solid #1e293b', borderRadius: '99px', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: notifState === 'on' ? 'default' : 'pointer' }}
                 >
                   {notifState === 'on' ? '🔔 Notifications on' : notifState === 'denied' ? '🔕 Notifications blocked' : '🔔 Enable notifications'}
-                </button>
-              )}
-              {person === 'Martin' && (
-                <button onClick={showMotivation} style={{ background: 'rgba(168,85,247,0.15)', color: '#e9d5ff', border: '1px solid #1e293b', borderRadius: '99px', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
-                  💬 Motivate me
                 </button>
               )}
               <span style={{ fontSize: '0.72rem', fontWeight: 700, color: syncStatus.includes('Live') ? '#4ade80' : '#fbbf24' }}>{syncStatus}</span>
@@ -1186,7 +1193,7 @@ export default function App() {
 
         {motivation && (
           <div onClick={() => setMotivation(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'linear-gradient(180deg, rgba(9,13,22,0.97), rgba(30,27,75,0.97))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
-            <video src="/alley-moving.mp4" poster="/alley-avatar.webp" autoPlay muted loop playsInline style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
+            <img src={motivationPic} alt="Alley" style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
             <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '2px', color: '#fbbf24', textTransform: 'uppercase', marginBottom: '8px' }}>Alley says</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.4, maxWidth: '420px', marginBottom: '24px' }}>{motivation}</div>
             <button onClick={() => setMotivation(null)} style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '99px', padding: '12px 28px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer' }}>Let's go! 💪</button>
