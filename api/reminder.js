@@ -26,6 +26,8 @@ const DOC_PATH = 'challenges/martin_karine_arena';
 const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 const SITE_URL = 'https://couples-workout-challenge2.vercel.app/';
 
+import { motivationPicFor } from './motivation-pics.js';
+
 const docUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${DOC_PATH}`;
 
 // Toronto date + hour (the reminder is a 6 PM Toronto-time thing)
@@ -52,6 +54,7 @@ function streakEndingYesterday(dateSet, todayStr) {
 }
 
 async function sendPush(externalId, title, body) {
+  const pic = motivationPicFor(externalId);
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',
     headers: {
@@ -64,6 +67,8 @@ async function sendPush(externalId, title, body) {
       headings: { en: title },
       contents: { en: body },
       url: SITE_URL,
+      chrome_web_image: pic,
+      big_picture: pic,
     }),
   });
   return r.ok;
@@ -113,6 +118,7 @@ export default async function handler(req, res) {
       const streak = streakEndingYesterday(dates, today);
       return {
         person: p,
+        pic: motivationPicFor(p.toLowerCase()),
         message: streak > 0
           ? `🔥 Your ${streak}-day streak is on the line — log some reps before the day ends!`
           : `💪 You haven't logged any reps yet today — log some to keep the challenge going!`,

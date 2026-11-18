@@ -8,6 +8,8 @@
 
 const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 
+import { motivationPicFor } from './motivation-pics.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -23,6 +25,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Push not configured on server' });
   }
 
+  const pic = motivationPicFor(opponent);
+
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',
     headers: {
@@ -34,6 +38,8 @@ export default async function handler(req, res) {
       include_external_user_ids: [opponent],
       headings: { en: title },
       contents: { en: message },
+      chrome_web_image: pic,
+      big_picture: pic,
     }),
   });
 

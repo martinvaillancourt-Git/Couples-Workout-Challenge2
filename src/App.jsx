@@ -116,7 +116,7 @@ const KARINE_MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Alley's rotating pictures for the motivation pop-up (26 total)
+// Alley's rotating pictures for the motivation pop-up (29 total)
 const ALLEY_PICS = [
   '/alley-pics/alley-01b.webp',
   '/alley-pics/alley-02b.webp',
@@ -602,35 +602,37 @@ export default function App() {
     heartsTimerRef.current = setTimeout(() => setHeartsKey(0), 2500);
   };
 
-  // Alley pops up full screen from time to time (Martin only, max once a day)
+  // True when the player is behind by more than 50% on total reps
+  // (their total is less than half of the opponent's).
+  const isBehindByHalf = (mine, theirs) => theirs > 0 && mine < theirs / 2;
+
+  // Alley pops up when Martin is behind by more than 50% (max once a day)
   const showMotivation = () => {
     setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
     setMotivationPic(ALLEY_PICS[Math.floor(Math.random() * ALLEY_PICS.length)]);
   };
   useEffect(() => {
     if (person !== 'Martin') return;
+    if (!isBehindByHalf(scores.Martin, scores.Karine)) return;
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('alleyMotivationLastShown') === today) return;
-    if (Math.random() < 0.5) {
-      localStorage.setItem('alleyMotivationLastShown', today);
-      showMotivation();
-    }
-  }, []);
+    localStorage.setItem('alleyMotivationLastShown', today);
+    showMotivation();
+  }, [scores, person]);
 
-  // Johnny Depp pops up full screen from time to time (Karine only, max once a day)
+  // Johnny Depp pops up when Karine is behind by more than 50% (max once a day)
   const showKarineMotivation = () => {
     setMotivation(KARINE_MOTIVATION_LINES[Math.floor(Math.random() * KARINE_MOTIVATION_LINES.length)]);
     setMotivationPic(JOHNNY_PICS[Math.floor(Math.random() * JOHNNY_PICS.length)]);
   };
   useEffect(() => {
     if (person !== 'Karine') return;
+    if (!isBehindByHalf(scores.Karine, scores.Martin)) return;
     const today = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('johnnyMotivationLastShown') === today) return;
-    if (Math.random() < 0.5) {
-      localStorage.setItem('johnnyMotivationLastShown', today);
-      showKarineMotivation();
-    }
-  }, []);
+    localStorage.setItem('johnnyMotivationLastShown', today);
+    showKarineMotivation();
+  }, [scores, person]);
   useEffect(() => {
     const ids = unlockedTrophies.map(t => t.id);
     if (prevUnlockedIdsRef.current === null) {
