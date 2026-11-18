@@ -49,6 +49,28 @@ const TROPHIES = [
       return Object.values(weeks).some(count => count >= 7);
     });
   } },
+  { id: 'century_club', title: 'Century Club', desc: 'Logged 100 reps in a single entry', icon: '💯', check: (m, k, h) => h.some(i => i.reps >= 100) },
+  { id: 'early_bird', title: 'Early Bird', desc: 'Logged reps before 7 AM', icon: '🌅', check: (m, k, h) => h.some(i => i.hour < 7) },
+  { id: 'night_owl', title: 'Night Owl', desc: 'Logged reps after 10 PM', icon: '🦉', check: (m, k, h) => h.some(i => i.hour >= 22) },
+  { id: 'photo_finish', title: 'Photo Finish', desc: 'Won a Weekly Showdown by 10 reps or fewer', icon: '📸', check: (m, k, h, s, w) => (w || []).some(x => x.winner !== 'Tie' && Math.abs(x.martin - x.karine) <= 10) },
+  { id: 'comeback', title: 'Comeback Kid', desc: 'Won a Weekly Showdown the week after losing one', icon: '🔄', check: (m, k, h, s, w) => {
+    const wins = (w || []).filter(x => x.winner !== 'Tie').sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+    for (let i = 1; i < wins.length; i++) {
+      if (addDaysStr(wins[i - 1].weekStart, 7) !== wins[i].weekStart) continue;
+      if (wins[i].winner !== wins[i - 1].winner) return true;
+    }
+    return false;
+  } },
+  { id: 'tag_team', title: 'Tag Team', desc: 'Both logged reps within 5 minutes of each other', icon: '🤝', check: (m, k, h) => {
+    const sorted = [...h].sort((a, b) => a.id - b.id);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].person !== sorted[i - 1].person && sorted[i].id - sorted[i - 1].id <= 5 * 60 * 1000) return true;
+    }
+    return false;
+  } },
+  { id: 'hat_trick', title: 'Hat Trick', desc: 'Won 3 Weekly Showdowns', icon: '🎩', check: (m, k, h, s, w) => (w || []).filter(x => x.winner === 'Martin').length >= 3 || (w || []).filter(x => x.winner === 'Karine').length >= 3 },
+  { id: 'total_10000', title: '10,000 Rep Legend', desc: 'Hit 10,000 total reps combined', icon: '💠', check: (m, k, h) => m + k >= 10000 },
+];
   { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
 ];
 
