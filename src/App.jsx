@@ -314,8 +314,6 @@ export default function App() {
   const [steals, setSteals] = useState({});
   const [weeklyWins, setWeeklyWins] = useState([]);
 
-  const [repInput, setRepInput] = useState('');
-  const [noteInput, setNoteInput] = useState('');
   const [forfeitPick, setForfeitPick] = useState(FORFEIT_OPTIONS[0]);
   const [forfeitCustom, setForfeitCustom] = useState('');
   const [dailyTaunt, setDailyTaunt] = useState('');
@@ -471,8 +469,6 @@ export default function App() {
     if (scores[who] <= scores[opponent] && updatedScores[who] > updatedScores[opponent]) triggerHearts();
 
     saveToCloud(updatedScores, updatedHistory, steals);
-    setRepInput('');
-    setNoteInput('');
   };
 
   const claimSteal = (who) => {
@@ -964,7 +960,7 @@ export default function App() {
           <div style={s.grid2}>
             <div style={s.panel}>
               <h3 style={{ marginTop: 0, marginBottom: '6px', fontSize: '1.1rem' }}>Log Reps for <span style={{ color: person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{person}</span></h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '14px' }}>Tap a quick add button or enter custom reps:</p>
+              <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '14px' }}>Tap a quick add button:</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '14px' }}>
                 <button onClick={() => logReps(person, 10, 'Quick Set')} style={s.quickBtn}>⚡ +10 Reps</button>
@@ -973,30 +969,6 @@ export default function App() {
                 <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>👑 +100 Reps</button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input
-                  type="text"
-                  placeholder="Note (e.g. Push-ups, Squats)"
-                  value={noteInput}
-                  onChange={e => setNoteInput(e.target.value)}
-                  style={s.input}
-                />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="number"
-                    placeholder="Custom count"
-                    value={repInput}
-                    onChange={e => setRepInput(e.target.value)}
-                    style={{ ...s.input, flex: 1 }}
-                  />
-                  <button
-                    onClick={() => logReps(person, repInput, noteInput || 'General Reps')}
-                    style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777' }}
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
             </div>
 
             <div style={s.panel}>
