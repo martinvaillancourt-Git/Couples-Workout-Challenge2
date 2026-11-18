@@ -100,7 +100,23 @@ const MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Alley's rotating pictures for the motivation pop-up (12 total)
+// Johnny Depp motivational lines for the full-screen pop-up (Karine only)
+const KARINE_MOTIVATION_LINES = [
+  "You've got this, Karine. One more set and you're ahead of Martin.",
+  "Martin isn't going to beat himself. Get moving.",
+  'Fifty reps a day keeps the couch away. Go!',
+  "Your streak is alive. Don't let it die today.",
+  "Every rep you log is a rep Martin didn't.",
+  'Johnny would want you to win this week. Go earn it.',
+  'No excuses — ten minutes is a full set. Go earn it.',
+  "You're one good session from taking the lead. Take it.",
+  'Remember the forfeit. Somebody owes somebody. Make it him.',
+  "Stronger every day. That's the whole deal. Now go.",
+  'Push-ups. Squats. Glute bridges. Pick one and start.',
+  "The week won't win itself. Log something.",
+];
+
+// Alley's rotating pictures for the motivation pop-up (26 total)
 const ALLEY_PICS = [
   '/alley-pics/alley-01b.webp',
   '/alley-pics/alley-02b.webp',
@@ -128,6 +144,13 @@ const ALLEY_PICS = [
   '/alley-pics/alley-25.webp',
   '/alley-pics/alley-27.webp',
   '/alley-pics/alley-28.webp',
+];
+
+// Johnny Depp pictures for the motivation pop-up (Karine only)
+const JOHNNY_PICS = [
+  '/johnny-pics/johnny-02.webp',
+  '/johnny-pics/johnny-03.webp',
+  '/johnny-pics/johnny-04.webp',
 ];
 
 function getRank(reps) {
@@ -580,6 +603,21 @@ export default function App() {
     if (Math.random() < 0.5) {
       localStorage.setItem('alleyMotivationLastShown', today);
       showMotivation();
+    }
+  }, []);
+
+  // Johnny Depp pops up full screen from time to time (Karine only, max once a day)
+  const showKarineMotivation = () => {
+    setMotivation(KARINE_MOTIVATION_LINES[Math.floor(Math.random() * KARINE_MOTIVATION_LINES.length)]);
+    setMotivationPic(JOHNNY_PICS[Math.floor(Math.random() * JOHNNY_PICS.length)]);
+  };
+  useEffect(() => {
+    if (person !== 'Karine') return;
+    const today = new Date().toISOString().split('T')[0];
+    if (localStorage.getItem('johnnyMotivationLastShown') === today) return;
+    if (Math.random() < 0.5) {
+      localStorage.setItem('johnnyMotivationLastShown', today);
+      showKarineMotivation();
     }
   }, []);
   useEffect(() => {
@@ -1215,7 +1253,7 @@ export default function App() {
 
         {motivation && (
           <div onClick={() => setMotivation(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'linear-gradient(180deg, rgba(9,13,22,0.97), rgba(30,27,75,0.97))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
-            <img src={motivationPic} alt="Alley" style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
+            <img src={motivationPic} alt="Motivation" style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
             <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '2px', color: '#fbbf24', textTransform: 'uppercase', marginBottom: '8px' }}>Alley says</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.4, maxWidth: '420px', marginBottom: '24px' }}>{motivation}</div>
             <button onClick={() => setMotivation(null)} style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '99px', padding: '12px 28px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer' }}>Let's go! 💪</button>
