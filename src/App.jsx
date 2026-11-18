@@ -158,6 +158,10 @@ const JOHNNY_PICS = [
   '/johnny-pics/johnny-06.webp',
   '/johnny-pics/johnny-07.webp',
   '/johnny-pics/johnny-08.webp',
+  '/johnny-pics/johnny-09.webp',
+  '/johnny-pics/johnny-10.webp',
+  '/johnny-pics/johnny-11.webp',
+  '/johnny-pics/johnny-12.webp',
 ];
 
 function getRank(reps) {
