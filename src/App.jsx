@@ -430,6 +430,41 @@ export default function App() {
   });
   const weekMax = Math.max(1, ...weekDaily.flatMap(d => [d.martin, d.karine]));
 
+  // Challenge data — all computed live from the history log
+  const todayLogs = history.filter(h => h.date === todayDateStr);
+  const todayTotals = {
+    Martin: todayLogs.filter(l => l.person === 'Martin').reduce((a, b) => a + b.reps, 0),
+    Karine: todayLogs.filter(l => l.person === 'Karine').reduce((a, b) => a + b.reps, 0),
+  };
+  const weekDaysLogged = {
+    Martin: new Set(history.filter(h => h.person === 'Martin' && h.date >= thisWeekStart && h.date <= thisWeekEnd).map(h => h.date)).size,
+    Karine: new Set(history.filter(h => h.person === 'Karine' && h.date >= thisWeekStart && h.date <= thisWeekEnd).map(h => h.date)).size,
+  };
+  // Who first reached `target` reps in the given entries (chronological)
+  const firstToReach = (entries, target) => {
+    const totals = { Martin: 0, Karine: 0 };
+    for (const e of [...entries].sort((a, b) => a.id - b.id)) {
+      totals[e.person] += e.reps;
+      if (totals[e.person] >= target) return e.person;
+    }
+    return null;
+  };
+  const dashWinner = firstToReach(todayLogs, 50);
+  const week500Winner = firstToReach(history.filter(h => h.date >= thisWeekStart && h.date <= thisWeekEnd), 500);
+
+  // One progress row inside a challenge card
+  const progressRow = (color, label, value, target) => (
+    <div style={{ marginBottom: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 700, marginBottom: '3px' }}>
+        <span style={{ color }}>{label}</span>
+        <span style={{ color: '#cbd5e1' }}>{value} / {target}</span>
+      </div>
+      <div style={{ height: '8px', background: '#1e293b', borderRadius: '99px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, (value / target) * 100)}%`, background: color, borderRadius: '99px', transition: 'width 0.5s ease-in-out' }} />
+      </div>
+    </div>
+  );
+
   // Update one weekly result (set forfeit / mark forfeit paid) and save it
   const updateWeeklyWin = (weekStart, patch) => {
     const updated = weeklyWins.map(w => w.weekStart === weekStart ? { ...w, ...patch } : w);
@@ -722,6 +757,7 @@ export default function App() {
             <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8', flex: 1 }}>💪 Logger</button>
             <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🗓️ Calendar</button>
             <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🏆 Trophies</button>
+            <button onClick={() => setTab('challenges')} style={{ ...s.navBtn, background: tab === 'challenges' ? '#1e293b' : 'transparent', color: tab === 'challenges' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🎯 Challenges</button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'space-between', borderTop: '1px solid #1e293b', paddingTop: '10px' }}>
             <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Active Logger:</span>
@@ -883,6 +919,70 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {tab === 'challenges' && (
+          <div style={s.panel}>
+            <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.1rem' }}>🎯 Challenges</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Live races and goals — progress updates as you log. Daily challenges reset at midnight, weekly ones on Monday.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>⚡ Daily Dash</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: dashWinner ? '#fbbf24' : '#94a3b8' }}>{dashWinner ? `🏆 ${dashWinner} won!` : 'In progress'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 50 reps today takes the day.</p>
+                {progressRow('#38bdf8', 'Martin', todayTotals.Martin, 50)}
+                {progressRow('#f472b6', 'Karine', todayTotals.Karine, 50)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💯 Century Day</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (todayTotals.Martin >= 100 || todayTotals.Karine >= 100) ? '#fbbf24' : '#94a3b8' }}>
+                    {todayTotals.Martin >= 100 && todayTotals.Karine >= 100 ? '✅ Both did it!' : todayTotals.Martin >= 100 ? '✅ Done by Martin' : todayTotals.Karine >= 100 ? '✅ Done by Karine' : 'In progress'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Hit 100 reps in a single day.</p>
+                {progressRow('#38bdf8', 'Martin', todayTotals.Martin, 100)}
+                {progressRow('#f472b6', 'Karine', todayTotals.Karine, 100)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🌟 Perfect Week</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekDaysLogged.Martin >= 7 || weekDaysLogged.Karine >= 7) ? '#fbbf24' : '#94a3b8' }}>
+                    {weekDaysLogged.Martin >= 7 && weekDaysLogged.Karine >= 7 ? '✅ Both did it!' : weekDaysLogged.Martin >= 7 ? '✅ Done by Martin' : weekDaysLogged.Karine >= 7 ? '✅ Done by Karine' : 'In progress'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Log reps every day this week, Monday to Sunday.</p>
+                {progressRow('#38bdf8', 'Martin', weekDaysLogged.Martin, 7)}
+                {progressRow('#f472b6', 'Karine', weekDaysLogged.Karine, 7)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🚀 Weekly 500</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: week500Winner ? '#fbbf24' : '#94a3b8' }}>{week500Winner ? `🏆 ${week500Winner} won!` : 'In progress'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 500 reps this week.</p>
+                {progressRow('#38bdf8', 'Martin', weekTotals.martin, 500)}
+                {progressRow('#f472b6', 'Karine', weekTotals.karine, 500)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🔥 Streak Starter</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (streaks.Martin.current >= 3 || streaks.Karine.current >= 3) ? '#fbbf24' : '#94a3b8' }}>
+                    {streaks.Martin.current >= 3 && streaks.Karine.current >= 3 ? '✅ Both did it!' : streaks.Martin.current >= 3 ? '✅ Done by Martin' : streaks.Karine.current >= 3 ? '✅ Done by Karine' : 'In progress'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Build a 3-day logging streak (your weekly freeze can save one missed day).</p>
+                {progressRow('#38bdf8', 'Martin', Math.min(streaks.Martin.current, 3), 3)}
+                {progressRow('#f472b6', 'Karine', Math.min(streaks.Karine.current, 3), 3)}
+              </div>
             </div>
           </div>
         )}
