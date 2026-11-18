@@ -619,12 +619,18 @@ export default function App() {
   };
 
   // Milestone celebration: when a new trophy is unlocked or a player ranks
-  // up, a dancing figure pops up for a few seconds. Fires for milestones
-  // earned on this phone or synced in from the other player's phone.
+  // up, a picture pops up for a few seconds — Alley for Martin, Johnny
+  // Depp for Karine. Fires for milestones earned on this phone or synced
+  // in from the other player's phone.
   const prevUnlockedIdsRef = useRef(null);
   const prevRanksRef = useRef(null);
   const celebrateTimerRef = useRef(null);
   const heartsTimerRef = useRef(null);
+  // Random picture for a celebration: Alley for Martin, Johnny Depp for Karine
+  const celebrationPic = (who) => {
+    const pics = who === 'Martin' ? ALLEY_PICS : JOHNNY_PICS;
+    return pics[Math.floor(Math.random() * pics.length)];
+  };
   const showCelebration = (c) => {
     setCelebration(c);
     if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current);
@@ -686,15 +692,15 @@ export default function App() {
     prevUnlockedIdsRef.current = ids;
     if (newOnes.length > 0) {
       const t = newOnes[0];
-      showCelebration({ emoji: person === 'Martin' ? '🕺' : '💃', title: `🎉 New trophy: ${t.title}!`, subtitle: t.desc });
+      showCelebration({ pic: celebrationPic(person), title: `🎉 New trophy: ${t.title}!`, subtitle: t.desc });
       return;
     }
     const prevRanks = prevRanksRef.current || {};
     prevRanksRef.current = { Martin: martinRank.title, Karine: karineRank.title };
     if (prevRanks.Martin && prevRanks.Martin !== martinRank.title) {
-      showCelebration({ emoji: '🕺', title: '🎉 Martin ranked up!', subtitle: `Now ${martinRank.title}` });
+      showCelebration({ pic: celebrationPic('Martin'), title: '🎉 Martin ranked up!', subtitle: `Now ${martinRank.title}` });
     } else if (prevRanks.Karine && prevRanks.Karine !== karineRank.title) {
-      showCelebration({ emoji: '💃', title: '🎉 Karine ranked up!', subtitle: `Now ${karineRank.title}` });
+      showCelebration({ pic: celebrationPic('Karine'), title: '🎉 Karine ranked up!', subtitle: `Now ${karineRank.title}` });
     }
   }, [unlockedTrophies, martinRank.title, karineRank.title]);
 
@@ -1289,7 +1295,11 @@ export default function App() {
               <span style={{ position: 'absolute', left: '-14px', top: '6px', fontSize: '1rem', animation: 'floatHeart 2s ease-out infinite' }}>❤️</span>
               <span style={{ position: 'absolute', right: '-14px', top: '0px', fontSize: '1rem', animation: 'floatHeart 2s ease-out 0.6s infinite' }}>✨</span>
               <span style={{ position: 'absolute', right: '-22px', top: '14px', fontSize: '0.85rem', animation: 'floatHeart 2s ease-out 1.1s infinite' }}>❤️</span>
-              <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
+              {celebration.pic ? (
+                <img src={celebration.pic} alt="Celebration" style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '50%', border: '3px solid #fbbf24', boxShadow: '0 0 24px rgba(251,191,36,0.4)', display: 'inline-block', animation: 'popIn 0.4s ease-out' }} />
+              ) : (
+                <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
+              )}
             </div>
             <div style={{ background: 'rgba(17,24,39,0.95)', border: '2px solid #fbbf24', borderRadius: '14px', padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', whiteSpace: 'nowrap' }}>
               <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fbbf24' }}>{celebration.title}</div>
