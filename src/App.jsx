@@ -194,6 +194,10 @@ const ALLEY_PICS = [
   '/alley-pics/alley-90.webp',
   '/alley-pics/alley-91.webp',
   '/alley-pics/alley-92.webp',
+  '/alley-pics/alley-93.webp',
+  '/alley-pics/alley-94.webp',
+  '/alley-pics/alley-95.webp',
+  '/alley-pics/alley-96.webp',
 ];
 
 // Johnny Depp pictures for the motivation pop-up (Karine only)
