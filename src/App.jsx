@@ -417,6 +417,19 @@ export default function App() {
   const karineWeekWins = weeklyWins.filter(w => w.winner === 'Karine').length;
   const latestWin = weeklyWins.length > 0 ? [...weeklyWins].sort((a, b) => b.weekStart.localeCompare(a.weekStart))[0] : null;
 
+  // Daily totals for the current week, for the bar chart
+  const weekDaily = Array.from({ length: 7 }, (_, i) => {
+    const ds = addDaysStr(thisWeekStart, i);
+    const dayLogs = history.filter(h => h.date === ds);
+    return {
+      dateStr: ds,
+      label: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+      martin: dayLogs.filter(l => l.person === 'Martin').reduce((a, b) => a + b.reps, 0),
+      karine: dayLogs.filter(l => l.person === 'Karine').reduce((a, b) => a + b.reps, 0),
+    };
+  });
+  const weekMax = Math.max(1, ...weekDaily.flatMap(d => [d.martin, d.karine]));
+
   // Update one weekly result (set forfeit / mark forfeit paid) and save it
   const updateWeeklyWin = (weekStart, patch) => {
     const updated = weeklyWins.map(w => w.weekStart === weekStart ? { ...w, ...patch } : w);
@@ -676,6 +689,32 @@ export default function App() {
               )}
             </div>
           )}
+        </div>
+
+        <div style={s.panel}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>📊 This Week</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+              <span style={{ color: '#38bdf8' }}>■ Martin</span> · <span style={{ color: '#f472b6' }}>■ Karine</span>
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: '4px', height: '118px' }}>
+            {weekDaily.map(d => (
+              <div key={d.dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', background: d.dateStr === todayDateStr ? 'rgba(56,189,248,0.08)' : 'transparent', borderRadius: '8px', padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '88px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                    {d.martin > 0 && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#38bdf8' }}>{d.martin}</span>}
+                    <div style={{ width: '12px', height: `${Math.max(3, (d.martin / weekMax) * 72)}px`, background: d.martin > 0 ? '#0284c7' : '#1e293b', borderRadius: '3px 3px 0 0' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                    {d.karine > 0 && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#f472b6' }}>{d.karine}</span>}
+                    <div style={{ width: '12px', height: `${Math.max(3, (d.karine / weekMax) * 72)}px`, background: d.karine > 0 ? '#db2777' : '#1e293b', borderRadius: '3px 3px 0 0' }} />
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.68rem', fontWeight: d.dateStr === todayDateStr ? 800 : 600, color: d.dateStr === todayDateStr ? '#f8fafc' : '#94a3b8', marginTop: '4px' }}>{d.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div style={s.nav}>
