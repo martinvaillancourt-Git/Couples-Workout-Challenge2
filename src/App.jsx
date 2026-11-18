@@ -116,7 +116,7 @@ const KARINE_MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Alley's rotating pictures for the motivation pop-up (54 total)
+// Alley's rotating pictures for the motivation pop-up (57 total)
 const ALLEY_PICS = [
   '/alley-pics/alley-01b.webp',
   '/alley-pics/alley-02b.webp',
@@ -172,6 +172,9 @@ const ALLEY_PICS = [
   '/alley-pics/alley-61.webp',
   '/alley-pics/alley-62.webp',
   '/alley-pics/alley-64.webp',
+  '/alley-pics/alley-65.webp',
+  '/alley-pics/alley-66.webp',
+  '/alley-pics/alley-68.webp',
 ];
 
 // Johnny Depp pictures for the motivation pop-up (Karine only)
