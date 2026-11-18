@@ -506,6 +506,12 @@ export default function App() {
           60% { transform: scale(1.08); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
         }
+        @keyframes flameFlicker {
+          0%, 100% { transform: scale(1) rotate(-2deg); filter: brightness(1); }
+          25% { transform: scale(1.15) rotate(2deg); filter: brightness(1.25); }
+          50% { transform: scale(0.95) rotate(-3deg); filter: brightness(0.95); }
+          75% { transform: scale(1.12) rotate(3deg); filter: brightness(1.2); }
+        }
         .pulse-martin { animation: pulseScore 0.5s ease-in-out; }
         .pulse-karine { animation: pulseScore 0.5s ease-in-out; }
         .flag-anim { animation: flagSlide 0.5s ease-in-out; }
@@ -545,7 +551,7 @@ export default function App() {
               </div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Martin.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Martin.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Martin.current > 0 ? '#fdba74' : '#94a3b8' }}>
-                {streaks.Martin.current > 0 ? `🔥 ${streaks.Martin.current}-day streak` : 'No streak yet — log today!'}
+                {streaks.Martin.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Martin.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
                 {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
                 {streaks.Martin.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
@@ -559,7 +565,7 @@ export default function App() {
               </div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Karine.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Karine.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Karine.current > 0 ? '#fdba74' : '#94a3b8' }}>
-                {streaks.Karine.current > 0 ? `🔥 ${streaks.Karine.current}-day streak` : 'No streak yet — log today!'}
+                {streaks.Karine.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Karine.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
                 {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
                 {streaks.Karine.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
