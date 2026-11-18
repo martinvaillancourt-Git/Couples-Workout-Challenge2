@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { initOneSignal, enableNotifications, setActivePlayer, notifyOpponent, isOneSignalConfigured } from './onesignal.js';
 
 // ⬇️ MAKE SURE YOUR CONFIG VALUES ARE HERE ⬇️
 const firebaseConfig = {
@@ -43,6 +44,7 @@ export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
   const [syncStatus, setSyncStatus] = useState('Connecting...');
+  const [notifState, setNotifState] = useState('off');
 
   const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
   const [history, setHistory] = useState([]);
@@ -109,6 +111,17 @@ export default function App() {
     else if (hr === 18) setDailyTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
   }, []);
 
+  // Push notifications (OneSignal) — no-op until the App ID is configured
+  // in src/onesignal.js. Each phone is tagged by its Active Logger so a
+  // push goes to the other player, not to yourself.
+  useEffect(() => {
+    initOneSignal(setNotifState);
+  }, []);
+
+  useEffect(() => {
+    if (notifState === 'on') setActivePlayer(person);
+  }, [person, notifState]);
+
   const saveToCloud = async (newScores, newHistory, newSteals) => {
     setScores(newScores);
     setHistory(newHistory);
@@ -158,6 +171,8 @@ export default function App() {
     const updatedHistory = [entry, ...history];
 
     saveToCloud(updatedScores, updatedHistory, steals);
+    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
+    notifyOpponent(opponent, `💪 ${who} logged ${num} reps`, `${who} just logged ${num} reps (${label}). Your turn!`);
     setRepInput('');
     setNoteInput('');
   };
@@ -187,6 +202,7 @@ export default function App() {
     const updatedHistory = [entry, ...history];
 
     saveToCloud(updatedScores, updatedHistory, updatedSteals);
+    notifyOpponent(opponent, `⚡ ${who} stole 50 reps!`, `${who} claimed the Rep Steal — +50 for them, -50 for you!`);
   };
 
   const undoLast = () => {
@@ -242,7 +258,23 @@ export default function App() {
         <header style={s.header}>
           <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={s.badge}>COUPLES REPS ARENA</span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: syncStatus.includes('Live') ? '#4ade80' : '#fbbf24' }}>{syncStatus}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {isOneSignalConfigured() && notifState !== 'unsupported' && (
+                <button
+                  onClick={async () => {
+                    if (notifState !== 'on') {
+                      const ok = await enableNotifications(person);
+                      setNotifState(ok ? 'on' : 'denied');
+                    }
+                  }}
+                  disabled={notifState === 'on'}
+                  style={{ background: notifState === 'on' ? 'rgba(74,222,128,0.15)' : notifState === 'denied' ? 'rgba(248,113,113,0.12)' : 'rgba(56,189,248,0.12)', color: notifState === 'on' ? '#4ade80' : notifState === 'denied' ? '#f87171' : '#38bdf8', border: '1px solid #1e293b', borderRadius: '99px', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: notifState === 'on' ? 'default' : 'pointer' }}
+                >
+                  {notifState === 'on' ? '🔔 Notifications on' : notifState === 'denied' ? '🔕 Notifications blocked' : '🔔 Enable notifications'}
+                </button>
+              )}
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: syncStatus.includes('Live') ? '#4ade80' : '#fbbf24' }}>{syncStatus}</span>
+            </span>
           </div>
           <div>
             <h1 style={s.title}>Martin vs. Karine</h1>
