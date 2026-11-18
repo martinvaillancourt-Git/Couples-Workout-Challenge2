@@ -452,6 +452,8 @@ export default function App() {
   const dashWinner = firstToReach(todayLogs, 50);
   const week500Winner = firstToReach(history.filter(h => h.date >= thisWeekStart && h.date <= thisWeekEnd), 500);
   const weekLogs = history.filter(h => h.date >= thisWeekStart && h.date <= thisWeekEnd);
+  const sprint100Winner = firstToReach(todayLogs, 100);
+  const week1000Winner = firstToReach(weekLogs, 1000);
   const earlyCount = {
     Martin: weekLogs.filter(l => l.person === 'Martin' && new Date(l.id).getHours() < 9).length,
     Karine: weekLogs.filter(l => l.person === 'Karine' && new Date(l.id).getHours() < 9).length,
@@ -998,6 +1000,38 @@ export default function App() {
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 500 reps this week.</p>
                 {progressRow('#38bdf8', 'Martin', weekTotals.martin, 500)}
                 {progressRow('#f472b6', 'Karine', weekTotals.karine, 500)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💨 Sprint 100</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: sprint100Winner ? '#fbbf24' : '#94a3b8' }}>{sprint100Winner ? `🏆 ${sprint100Winner} won!` : 'In progress'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 100 reps today.</p>
+                {progressRow('#38bdf8', 'Martin', todayTotals.Martin, 100)}
+                {progressRow('#f472b6', 'Karine', todayTotals.Karine, 100)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🏁 Weekly 1,000</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: week1000Winner ? '#fbbf24' : '#94a3b8' }}>{week1000Winner ? `🏆 ${week1000Winner} won!` : 'In progress'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 1,000 reps this week.</p>
+                {progressRow('#38bdf8', 'Martin', weekTotals.martin, 1000)}
+                {progressRow('#f472b6', 'Karine', weekTotals.karine, 1000)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🏆 Race to 5,000</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (martinReps >= 5000 || karineReps >= 5000) ? '#fbbf24' : '#94a3b8' }}>
+                    {martinReps >= 5000 && karineReps >= 5000 ? (martinReps === karineReps ? 'Tied' : `🏆 ${martinReps > karineReps ? 'Martin' : 'Karine'} won!`) : martinReps >= 5000 ? '🏆 Martin won!' : karineReps >= 5000 ? '🏆 Karine won!' : martinReps === karineReps ? 'Tied' : martinReps > karineReps ? 'Martin leads' : 'Karine leads'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 5,000 total reps, all time. The long game.</p>
+                {progressRow('#38bdf8', 'Martin', martinReps, 5000)}
+                {progressRow('#f472b6', 'Karine', karineReps, 5000)}
               </div>
 
               <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
