@@ -1,4 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+
+// ⬇️ PASTE YOUR FIREBASE CONFIG VALUES HERE ⬇️
+const firebaseConfig = {
+  apiKey: "AIzaSyDHDC1i4szCTjII6s6WS2ejt1kCr9hoH_Y",
+  authDomain: "couples-reps-arena.firebaseapp.com",
+  projectId: "couples-reps-arenaD",
+  storageBucket: "couples-reps-arena.firebasestorage.app",
+  messagingSenderId: "1032825924020",
+  appId: "1:1032825924020:web:bf5c95b3f4967a4ec86ae1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const challengeDocRef = doc(db, 'challenges', 'martin_karine_arena');
 
 const TROPHIES = [
   { id: 'first', title: 'First Rep', desc: 'Logged your very first repetition', icon: '🎯', check: (m, k, h) => h.length >= 1 },
@@ -26,29 +42,62 @@ function getRank(reps) {
 export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
-  
-  const [scores, setScores] = useState(() => JSON.parse(localStorage.getItem('mk_mobile_scores')) || { Martin: 0, Karine: 0 });
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('mk_mobile_history')) || []);
-  const [steals, setSteals] = useState(() => JSON.parse(localStorage.getItem('mk_mobile_steals')) || {});
-  
+  const [syncStatus, setSyncStatus] = useState('Connecting...');
+
+  const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
+  const [history, setHistory] = useState([]);
+  const [steals, setSteals] = useState({});
+
   const [repInput, setRepInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
   const [dailyTaunt, setDailyTaunt] = useState('');
   const [animateScore, setAnimateScore] = useState(null);
-  
+
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  useEffect(() => { localStorage.setItem('mk_mobile_scores', JSON.stringify(scores)); }, [scores]);
-  useEffect(() => { localStorage.setItem('mk_mobile_history', JSON.stringify(history)); }, [history]);
-  useEffect(() => { localStorage.setItem('mk_mobile_steals', JSON.stringify(steals)); }, [steals]);
+  // Real-time listener: updates both phones automatically whenever either person logs reps
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      challengeDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data.scores) setScores(data.scores);
+          if (data.history) setHistory(data.history);
+          if (data.steals) setSteals(data.steals);
+        }
+        setSyncStatus('🟢 Live Sync');
+      },
+      (error) => {
+        console.error('Sync error:', error);
+        setSyncStatus('🔴 Offline');
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const hr = new Date().getHours();
     if (hr === 12) setDailyTaunt('🕛 Noon Check-in: Half the day is gone! Time to log some reps and pull the rope.');
     else if (hr === 18) setDailyTaunt('🕕 6:00 PM Showdown: Prime workout window is open!');
   }, []);
+
+  const saveToCloud = async (newScores, newHistory, newSteals) => {
+    setScores(newScores);
+    setHistory(newHistory);
+    setSteals(newSteals);
+    try {
+      await setDoc(challengeDocRef, {
+        scores: newScores,
+        history: newHistory,
+        steals: newSteals
+      });
+    } catch (err) {
+      console.error('Failed to save to cloud:', err);
+    }
+  };
 
   const nowObj = new Date();
   const dayOfWeek = nowObj.getDay();
@@ -67,7 +116,7 @@ export default function App() {
     const num = Number(count);
     if (!num || num <= 0) return;
 
-    setScores(prev => ({ ...prev, [who]: prev[who] + num }));
+    const updatedScores = { ...scores, [who]: scores[who] + num };
     triggerAnimation(who);
 
     const now = new Date();
@@ -81,20 +130,22 @@ export default function App() {
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
     };
-    setHistory(prev => [entry, ...prev]);
+    const updatedHistory = [entry, ...history];
+
+    saveToCloud(updatedScores, updatedHistory, steals);
     setRepInput('');
     setNoteInput('');
   };
 
   const claimSteal = (who) => {
     if (stealClaimedBy) return;
-    setSteals(prev => ({ ...prev, [stealKey]: who }));
+    const updatedSteals = { ...steals, [stealKey]: who };
     const opponent = who === 'Martin' ? 'Karine' : 'Martin';
-    setScores(prev => ({
-      ...prev,
-      [who]: prev[who] + 50,
-      [opponent]: Math.max(0, prev[opponent] - 50)
-    }));
+    const updatedScores = {
+      ...scores,
+      [who]: scores[who] + 50,
+      [opponent]: Math.max(0, scores[opponent] - 50)
+    };
     triggerAnimation(who);
 
     const now = new Date();
@@ -108,14 +159,19 @@ export default function App() {
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
     };
-    setHistory(prev => [entry, ...prev]);
+    const updatedHistory = [entry, ...history];
+
+    saveToCloud(updatedScores, updatedHistory, updatedSteals);
   };
 
   const undoLast = () => {
     if (history.length === 0) return;
     const [last, ...rest] = history;
-    setScores(prev => ({ ...prev, [last.person]: Math.max(0, prev[last.person] - last.reps) }));
-    setHistory(rest);
+    const updatedScores = {
+      ...scores,
+      [last.person]: Math.max(0, scores[last.person] - last.reps)
+    };
+    saveToCloud(updatedScores, rest, steals);
   };
 
   const martinReps = scores.Martin;
@@ -158,10 +214,12 @@ export default function App() {
       `}</style>
 
       <div style={s.container}>
-        {/* Header */}
         <header style={s.header}>
-          <div>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={s.badge}>COUPLES REPS ARENA</span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>{syncStatus}</span>
+          </div>
+          <div>
             <h1 style={s.title}>Martin vs. Karine</h1>
             <p style={s.subtitle}>Pure Repetition Counter &amp; Showdown</p>
           </div>
@@ -189,7 +247,6 @@ export default function App() {
           </div>
         )}
 
-        {/* 1PM STEAL BANNER */}
         <div style={{ ...s.stealBanner, borderColor: isStealWindow ? '#f59e0b' : '#334155', background: isStealWindow ? 'rgba(245, 158, 11, 0.15)' : '#111827' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '1.4rem' }}>⚡</span>
@@ -201,8 +258,8 @@ export default function App() {
             </div>
           </div>
           {!stealClaimedBy && (
-            <button 
-              onClick={() => claimSteal(person)} 
+            <button
+              onClick={() => claimSteal(person)}
               style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777', fontSize: '0.8rem', padding: '8px 12px', marginTop: '6px' }}
             >
               Claim Steal as {person} (+50)
@@ -210,7 +267,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Tug of War */}
         <div style={s.panel}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#94a3b8' }}>🪢 Live Tug-of-War Bar</span>
@@ -225,14 +281,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation & Player Toggle */}
         <div style={s.nav}>
           <div style={{ display: 'flex', gap: '6px', width: '100%', justifyContent: 'space-between' }}>
             <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8', flex: 1 }}>💪 Logger</button>
             <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🗓️ Calendar</button>
-            <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8', flex: 1 }}>
-              🏆 Trophies
-            </button>
+            <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🏆 Trophies</button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'space-between', borderTop: '1px solid #1e293b', paddingTop: '10px' }}>
             <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Active Logger:</span>
@@ -243,7 +296,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* TAB 1: LOGGER */}
         {tab === 'arena' && (
           <div style={s.grid2}>
             <div style={s.panel}>
@@ -291,7 +343,7 @@ export default function App() {
                   {!resetConfirm ? (
                     <button onClick={() => setResetConfirm(true)} style={{ ...s.smallBtn, color: '#f87171' }}>Reset</button>
                   ) : (
-                    <button onClick={() => { setScores({ Martin: 0, Karine: 0 }); setHistory([]); setSteals({}); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm</button>
+                    <button onClick={() => { saveToCloud({ Martin: 0, Karine: 0 }, [], {}); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm</button>
                   )}
                 </div>
               </div>
@@ -312,7 +364,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: CALENDAR */}
         {tab === 'cal' && (
           <div style={s.grid2}>
             <div style={s.panel}>
@@ -378,7 +429,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: TROPHIES */}
         {tab === 'trophies' && (
           <div style={s.panel}>
             <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.1rem' }}>🏆 Trophy Room</h3>
