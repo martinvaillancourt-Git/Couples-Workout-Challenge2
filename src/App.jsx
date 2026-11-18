@@ -70,7 +70,6 @@ const TROPHIES = [
   } },
   { id: 'hat_trick', title: 'Hat Trick', desc: 'Won 3 Weekly Showdowns', icon: '🎩', check: (m, k, h, s, w) => (w || []).filter(x => x.winner === 'Martin').length >= 3 || (w || []).filter(x => x.winner === 'Karine').length >= 3 },
   { id: 'total_10000', title: '10,000 Rep Legend', desc: 'Hit 10,000 total reps combined', icon: '💠', check: (m, k, h) => m + k >= 10000 },
-];
   { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
 ];
 
