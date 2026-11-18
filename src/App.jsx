@@ -449,7 +449,7 @@ export default function App() {
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: martinRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{martinRank.title}</span>
               </div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '4px', color: streaks.Martin.current > 0 ? '#fb923c' : '#64748b' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Martin.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Martin.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Martin.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Martin.current > 0 ? `🔥 ${streaks.Martin.current}-day streak` : 'No streak yet — log today!'}
                 {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
                 {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
@@ -462,7 +462,7 @@ export default function App() {
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: karineRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{karineRank.title}</span>
               </div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '4px', color: streaks.Karine.current > 0 ? '#fb923c' : '#64748b' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Karine.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Karine.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Karine.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Karine.current > 0 ? `🔥 ${streaks.Karine.current}-day streak` : 'No streak yet — log today!'}
                 {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
                 {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
