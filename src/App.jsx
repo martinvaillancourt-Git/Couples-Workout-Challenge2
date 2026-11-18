@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
 
-// ⬇️ PASTE YOUR FIREBASE CONFIG VALUES HERE ⬇️
+// ⬇️ MAKE SURE YOUR CONFIG VALUES ARE HERE ⬇️
 const firebaseConfig = {
   apiKey: "AIzaSyDHDC1i4szCTjII6s6WS2ejt1kCr9hoH_Y",
   authDomain: "couples-reps-arena.firebaseapp.com",
-  projectId: "couples-reps-arenaD",
+  projectId: "couples-reps-arena",
   storageBucket: "couples-reps-arena.firebasestorage.app",
   messagingSenderId: "1032825924020",
   appId: "1:1032825924020:web:bf5c95b3f4967a4ec86ae1"
@@ -57,25 +57,50 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  // Real-time listener: updates both phones automatically whenever either person logs reps
+  // Real-time cloud sync with a 3-second connection timeout fallback
   useEffect(() => {
+    let isConnected = false;
+    const timeout = setTimeout(() => {
+      if (!isConnected) {
+        setSyncStatus('⚠️ Local Mode (Cloud Timeout)');
+      }
+    }, 3000);
+
     const unsubscribe = onSnapshot(
       challengeDocRef,
-      (snapshot) => {
+      async (snapshot) => {
+        isConnected = true;
+        clearTimeout(timeout);
         if (snapshot.exists()) {
           const data = snapshot.data();
           if (data.scores) setScores(data.scores);
           if (data.history) setHistory(data.history);
           if (data.steals) setSteals(data.steals);
+        } else {
+          try {
+            await setDoc(challengeDocRef, {
+              scores: { Martin: 0, Karine: 0 },
+              history: [],
+              steals: {}
+            });
+          } catch (err) {
+            console.error('Initialization error:', err);
+          }
         }
         setSyncStatus('🟢 Live Sync');
       },
       (error) => {
+        isConnected = true;
+        clearTimeout(timeout);
         console.error('Sync error:', error);
-        setSyncStatus('🔴 Offline');
+        setSyncStatus('🔴 Offline Mode');
       }
     );
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -217,7 +242,7 @@ export default function App() {
         <header style={s.header}>
           <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={s.badge}>COUPLES REPS ARENA</span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>{syncStatus}</span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: syncStatus.includes('Live') ? '#4ade80' : '#fbbf24' }}>{syncStatus}</span>
           </div>
           <div>
             <h1 style={s.title}>Martin vs. Karine</h1>
