@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { initOneSignal, enableNotifications, setActivePlayer, notifyOpponent, isOneSignalConfigured } from './onesignal.js';
@@ -33,6 +33,7 @@ const TROPHIES = [
   { id: 'streak_3', title: 'On Fire', desc: 'Reached a 3-day logging streak', icon: '🔥', check: (m, k, h, s) => (s?.Martin.best >= 3 || s?.Karine.best >= 3) },
   { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
   { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
+  { id: 'weekly_champ', title: 'Weekly Champion', desc: 'Won a Weekly Showdown', icon: '🏆', check: (m, k, h, s, w) => (w || []).some(x => x.winner === 'Martin' || x.winner === 'Karine') },
 ];
 
 function getRank(reps) {
@@ -80,6 +81,36 @@ function computeStreaks(history) {
   return result;
 }
 
+// Weekly Showdown: weeks run Monday–Sunday. The winner of a week is
+// crowned automatically the first time the app opens after that week ends.
+function addDaysStr(ds, n) {
+  const d = new Date(ds + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function getMondayStr(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const idx = (d.getDay() + 6) % 7; // Mon=0 .. Sun=6
+  return addDaysStr(ds, -idx);
+}
+
+function computeWeekTotals(history, weekStart) {
+  const weekEnd = addDaysStr(weekStart, 6);
+  let martin = 0, karine = 0;
+  for (const e of history) {
+    if (e.date >= weekStart && e.date <= weekEnd) {
+      if (e.person === 'Martin') martin += e.reps;
+      else if (e.person === 'Karine') karine += e.reps;
+    }
+  }
+  return { martin, karine };
+}
+
+function fmtShortDate(ds) {
+  return new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
@@ -89,6 +120,7 @@ export default function App() {
   const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
   const [history, setHistory] = useState([]);
   const [steals, setSteals] = useState({});
+  const [weeklyWins, setWeeklyWins] = useState([]);
 
   const [repInput, setRepInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
@@ -118,6 +150,7 @@ export default function App() {
           if (data.scores) setScores(data.scores);
           if (data.history) setHistory(data.history);
           if (data.steals) setSteals(data.steals);
+          if (data.weeklyWins) setWeeklyWins(data.weeklyWins);
         } else {
           try {
             await setDoc(challengeDocRef, {
@@ -162,15 +195,40 @@ export default function App() {
     if (notifState === 'on') setActivePlayer(person);
   }, [person, notifState]);
 
-  const saveToCloud = async (newScores, newHistory, newSteals) => {
+  // Crown last week's showdown winner the first time the app opens after
+  // the week ends (weeks run Monday–Sunday). The result is saved to the
+  // cloud and the other player gets a push about it.
+  const crownedRef = useRef({});
+  useEffect(() => {
+    const thisWeek = getMondayStr(todayDateStr);
+    const lastWeek = addDaysStr(thisWeek, -7);
+    if (crownedRef.current[lastWeek]) return;
+    if (weeklyWins.some(w => w.weekStart === lastWeek)) return;
+    const totals = computeWeekTotals(history, lastWeek);
+    if (totals.martin === 0 && totals.karine === 0) return;
+    const winner = totals.martin > totals.karine ? 'Martin' : totals.karine > totals.martin ? 'Karine' : 'Tie';
+    crownedRef.current[lastWeek] = true;
+    const entry = { weekStart: lastWeek, winner, martin: totals.martin, karine: totals.karine };
+    const updatedWins = [...weeklyWins, entry];
+    saveToCloud(scores, history, steals, updatedWins);
+    const opponent = person === 'Martin' ? 'Karine' : 'Martin';
+    const msg = winner === 'Tie'
+      ? `Weekly Showdown ended in a tie, ${totals.martin}–${totals.karine}!`
+      : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}!`;
+    notifyOpponent(opponent, '🏆 Weekly Showdown result', msg);
+  }, [history, weeklyWins]);
+
+  const saveToCloud = async (newScores, newHistory, newSteals, newWeeklyWins = weeklyWins) => {
     setScores(newScores);
     setHistory(newHistory);
     setSteals(newSteals);
+    setWeeklyWins(newWeeklyWins);
     try {
       await setDoc(challengeDocRef, {
         scores: newScores,
         history: newHistory,
-        steals: newSteals
+        steals: newSteals,
+        weeklyWins: newWeeklyWins
       });
     } catch (err) {
       console.error('Failed to save to cloud:', err);
@@ -263,6 +321,15 @@ export default function App() {
   const martinRank = getRank(martinReps);
   const karineRank = getRank(karineReps);
   const streaks = computeStreaks(history);
+
+  // Weekly Showdown (Monday–Sunday)
+  const thisWeekStart = getMondayStr(todayDateStr);
+  const thisWeekEnd = addDaysStr(thisWeekStart, 6);
+  const weekTotals = computeWeekTotals(history, thisWeekStart);
+  const weekLeader = weekTotals.martin > weekTotals.karine ? 'Martin' : weekTotals.karine > weekTotals.martin ? 'Karine' : null;
+  const daysLeftInWeek = 6 - ((dayOfWeek + 6) % 7);
+  const martinWeekWins = weeklyWins.filter(w => w.winner === 'Martin').length;
+  const karineWeekWins = weeklyWins.filter(w => w.winner === 'Karine').length;
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
@@ -389,6 +456,34 @@ export default function App() {
             <div style={s.tugFlag} className="flag-anim">🚩</div>
             <div style={{ ...s.tugK, width: `${100 - martinPct}%`, transition: 'width 0.5s ease-in-out' }}>{100 - martinPct > 15 && `K: ${100 - martinPct}%`}</div>
           </div>
+        </div>
+
+        <div style={s.panel}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>🏆 Weekly Showdown</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Week of {fmtShortDate(thisWeekStart)} – {fmtShortDate(thisWeekEnd)} · winner crowned Monday</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 800, marginBottom: '6px' }}>
+            <span style={{ color: '#38bdf8' }}>Martin: {weekTotals.martin.toLocaleString()}</span>
+            <span style={{ color: '#f472b6' }}>Karine: {weekTotals.karine.toLocaleString()}</span>
+          </div>
+          <div style={s.tugOuter}>
+            <div style={{ ...s.tugM, width: `${weekTotals.martin + weekTotals.karine === 0 ? 50 : Math.round((weekTotals.martin / (weekTotals.martin + weekTotals.karine)) * 100)}%`, transition: 'width 0.5s ease-in-out' }} />
+            <div style={{ ...s.tugK, width: `${weekTotals.martin + weekTotals.karine === 0 ? 50 : 100 - Math.round((weekTotals.martin / (weekTotals.martin + weekTotals.karine)) * 100)}%`, transition: 'width 0.5s ease-in-out' }} />
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '8px' }}>
+            {weekLeader ? `${weekLeader} leads this week` : 'Tied this week'} · {daysLeftInWeek === 0 ? 'last day — ends tonight!' : `${daysLeftInWeek} day${daysLeftInWeek === 1 ? '' : 's'} left`}
+          </div>
+          {weeklyWins.length > 0 && (
+            <div style={{ marginTop: '10px', borderTop: '1px solid #1e293b', paddingTop: '8px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px' }}>👑 Hall of Champions — Martin {martinWeekWins} · Karine {karineWeekWins}</div>
+              {[...weeklyWins].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).slice(0, 5).map(w => (
+                <div key={w.weekStart} style={{ fontSize: '0.78rem', color: '#cbd5e1', padding: '2px 0' }}>
+                  Week of {fmtShortDate(w.weekStart)}: <strong style={{ color: w.winner === 'Martin' ? '#38bdf8' : w.winner === 'Karine' ? '#f472b6' : '#94a3b8' }}>{w.winner === 'Tie' ? 'Tie' : `${w.winner} won`}</strong> ({w.martin}–{w.karine})
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={s.nav}>
@@ -545,7 +640,7 @@ export default function App() {
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Unlock achievements together as your reps climb!</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {TROPHIES.map(t => {
-                const unlocked = t.check(martinReps, karineReps, history, streaks);
+                const unlocked = t.check(martinReps, karineReps, history, streaks, weeklyWins);
                 return (
                   <div key={t.id} style={{ background: '#090d16', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '12px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
                     <span style={{ fontSize: '2rem', display: 'block', marginBottom: '6px' }}>{t.icon}</span>
