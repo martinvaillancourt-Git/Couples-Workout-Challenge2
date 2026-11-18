@@ -282,8 +282,6 @@ export default function App() {
     const updatedHistory = [entry, ...history];
 
     saveToCloud(updatedScores, updatedHistory, steals);
-    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
-    notifyOpponent(opponent, `💪 ${who} logged ${num} reps`, `${who} just logged ${num} reps (${label}). Your turn!`);
     setRepInput('');
     setNoteInput('');
   };

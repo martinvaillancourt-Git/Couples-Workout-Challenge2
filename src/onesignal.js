@@ -10,9 +10,11 @@
 // The App ID below is public by design (it ships in the SDK snippet).
 //
 // How it works: each phone is identified by the "Active Logger" selected in
-// the app (Martin or Karine). When one person logs reps, a push is sent to
-// the other person's external user id. Keep your own name selected as the
-// Active Logger on your own phone so pushes go to the right person.
+// the app (Martin or Karine). Pushes go to the other person's external user
+// id when a Rep Steal is claimed or a Weekly Showdown is crowned (and a
+// daily 6 PM reminder, sent by api/reminder.js, if someone hasn't logged
+// yet). Keep your own name selected as the Active Logger on your own phone
+// so pushes go to the right person.
 
 export const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 
