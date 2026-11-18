@@ -451,6 +451,34 @@ export default function App() {
   };
   const dashWinner = firstToReach(todayLogs, 50);
   const week500Winner = firstToReach(history.filter(h => h.date >= thisWeekStart && h.date <= thisWeekEnd), 500);
+  const weekLogs = history.filter(h => h.date >= thisWeekStart && h.date <= thisWeekEnd);
+  const earlyCount = {
+    Martin: weekLogs.filter(l => l.person === 'Martin' && new Date(l.id).getHours() < 9).length,
+    Karine: weekLogs.filter(l => l.person === 'Karine' && new Date(l.id).getHours() < 9).length,
+  };
+  const nightCount = {
+    Martin: weekLogs.filter(l => l.person === 'Martin' && new Date(l.id).getHours() >= 22).length,
+    Karine: weekLogs.filter(l => l.person === 'Karine' && new Date(l.id).getHours() >= 22).length,
+  };
+  const biggestSession = {
+    Martin: Math.max(0, ...weekLogs.filter(l => l.person === 'Martin').map(l => l.reps)),
+    Karine: Math.max(0, ...weekLogs.filter(l => l.person === 'Karine').map(l => l.reps)),
+  };
+  const satStr = addDaysStr(thisWeekStart, 5);
+  const sunStr = addDaysStr(thisWeekStart, 6);
+  const weekendTotals = {
+    Martin: weekLogs.filter(l => l.person === 'Martin' && (l.date === satStr || l.date === sunStr)).reduce((a, b) => a + b.reps, 0),
+    Karine: weekLogs.filter(l => l.person === 'Karine' && (l.date === satStr || l.date === sunStr)).reduce((a, b) => a + b.reps, 0),
+  };
+  const lastWeekStart = addDaysStr(thisWeekStart, -7);
+  const lastWeekEnd = addDaysStr(thisWeekStart, -1);
+  const lastWeekTotals = {
+    Martin: history.filter(h => h.person === 'Martin' && h.date >= lastWeekStart && h.date <= lastWeekEnd).reduce((a, b) => a + b.reps, 0),
+    Karine: history.filter(h => h.person === 'Karine' && h.date >= lastWeekStart && h.date <= lastWeekEnd).reduce((a, b) => a + b.reps, 0),
+  };
+  const martinWeekDaySet = new Set(weekLogs.filter(l => l.person === 'Martin').map(l => l.date));
+  const karineWeekDaySet = new Set(weekLogs.filter(l => l.person === 'Karine').map(l => l.date));
+  const tagTeamDays = [...martinWeekDaySet].filter(d => karineWeekDaySet.has(d)).length;
 
   // One progress row inside a challenge card
   const progressRow = (color, label, value, target) => (
@@ -982,6 +1010,84 @@ export default function App() {
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Build a 3-day logging streak (your weekly freeze can save one missed day).</p>
                 {progressRow('#38bdf8', 'Martin', Math.min(streaks.Martin.current, 3), 3)}
                 {progressRow('#f472b6', 'Karine', Math.min(streaks.Karine.current, 3), 3)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🌅 Sunrise Club</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
+                    {earlyCount.Martin === 0 && earlyCount.Karine === 0 ? 'In progress' : earlyCount.Martin === earlyCount.Karine ? 'Tied' : earlyCount.Martin > earlyCount.Karine ? '☀️ Martin leads' : '☀️ Karine leads'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Most sessions logged before 9 AM this week.</p>
+                {progressRow('#38bdf8', 'Martin', earlyCount.Martin, 3)}
+                {progressRow('#f472b6', 'Karine', earlyCount.Karine, 3)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🦉 Night Owl</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
+                    {nightCount.Martin === 0 && nightCount.Karine === 0 ? 'In progress' : nightCount.Martin === nightCount.Karine ? 'Tied' : nightCount.Martin > nightCount.Karine ? '🌙 Martin leads' : '🌙 Karine leads'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Most sessions logged after 10 PM this week.</p>
+                {progressRow('#38bdf8', 'Martin', nightCount.Martin, 3)}
+                {progressRow('#f472b6', 'Karine', nightCount.Karine, 3)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💪 Biggest Session</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
+                    {biggestSession.Martin === 0 && biggestSession.Karine === 0 ? 'In progress' : biggestSession.Martin === biggestSession.Karine ? 'Tied' : biggestSession.Martin > biggestSession.Karine ? '💪 Martin leads' : '💪 Karine leads'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Biggest single log this week — one session, most reps.</p>
+                {progressRow('#38bdf8', 'Martin', biggestSession.Martin, 50)}
+                {progressRow('#f472b6', 'Karine', biggestSession.Karine, 50)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🎉 Weekend Warrior</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
+                    {weekendTotals.Martin === 0 && weekendTotals.Karine === 0 ? 'In progress' : weekendTotals.Martin === weekendTotals.Karine ? 'Tied' : weekendTotals.Martin > weekendTotals.Karine ? '🎉 Martin leads' : '🎉 Karine leads'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Most reps logged Saturday + Sunday this weekend.</p>
+                {progressRow('#38bdf8', 'Martin', weekendTotals.Martin, 150)}
+                {progressRow('#f472b6', 'Karine', weekendTotals.Karine, 150)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>📈 Beat Last Week</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekTotals.martin >= Math.max(lastWeekTotals.Martin, 50) || weekTotals.karine >= Math.max(lastWeekTotals.Karine, 50)) ? '#fbbf24' : '#94a3b8' }}>
+                    {weekTotals.martin >= Math.max(lastWeekTotals.Martin, 50) && weekTotals.karine >= Math.max(lastWeekTotals.Karine, 50) ? '✅ Both did it!' : weekTotals.martin >= Math.max(lastWeekTotals.Martin, 50) ? '✅ Done by Martin' : weekTotals.karine >= Math.max(lastWeekTotals.Karine, 50) ? '✅ Done by Karine' : 'In progress'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Top your own total from last week (last week: Martin {lastWeekTotals.Martin}, Karine {lastWeekTotals.Karine}).</p>
+                {progressRow('#38bdf8', 'Martin', weekTotals.martin, Math.max(lastWeekTotals.Martin, 50))}
+                {progressRow('#f472b6', 'Karine', weekTotals.karine, Math.max(lastWeekTotals.Karine, 50))}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🤝 Tag Team</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: tagTeamDays >= 7 ? '#fbbf24' : '#94a3b8' }}>{tagTeamDays >= 7 ? '✅ Perfect team week!' : `${tagTeamDays}/7 days together`}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Team challenge: log on the same day. Every shared day counts for both of you.</p>
+                {progressRow('#22c55e', 'Together', tagTeamDays, 7)}
+              </div>
+
+              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🎯 Combined 1,000</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekTotals.martin + weekTotals.karine) >= 1000 ? '#fbbf24' : '#94a3b8' }}>{(weekTotals.martin + weekTotals.karine) >= 1000 ? '✅ 1,000 reached!' : 'In progress'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>Team challenge: together, reach 1,000 reps this week — or you both lose to the couch.</p>
+                {progressRow('linear-gradient(90deg,#0284c7,#db2777)', 'Together', weekTotals.martin + weekTotals.karine, 1000)}
               </div>
             </div>
           </div>
