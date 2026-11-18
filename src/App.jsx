@@ -34,6 +34,17 @@ const TROPHIES = [
   { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
   { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
   { id: 'weekly_champ', title: 'Weekly Champion', desc: 'Won a Weekly Showdown', icon: '🏆', check: (m, k, h, s, w) => (w || []).some(x => x.winner === 'Martin' || x.winner === 'Karine') },
+  { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
+];
+
+// Forfeit ideas for the weekly loser (winner can also type a custom one)
+const FORFEIT_OPTIONS = [
+  'Winner picks dinner',
+  'Loser cooks dinner',
+  'Loser does the dishes for a week',
+  '10-minute massage for the winner',
+  'Winner picks the movie night',
+  'Loser does a chore of the winner’s choice',
 ];
 
 function getRank(reps) {
@@ -124,6 +135,8 @@ export default function App() {
 
   const [repInput, setRepInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
+  const [forfeitPick, setForfeitPick] = useState(FORFEIT_OPTIONS[0]);
+  const [forfeitCustom, setForfeitCustom] = useState('');
   const [dailyTaunt, setDailyTaunt] = useState('');
   const [animateScore, setAnimateScore] = useState(null);
 
@@ -208,13 +221,13 @@ export default function App() {
     if (totals.martin === 0 && totals.karine === 0) return;
     const winner = totals.martin > totals.karine ? 'Martin' : totals.karine > totals.martin ? 'Karine' : 'Tie';
     crownedRef.current[lastWeek] = true;
-    const entry = { weekStart: lastWeek, winner, martin: totals.martin, karine: totals.karine };
+    const entry = { weekStart: lastWeek, winner, martin: totals.martin, karine: totals.karine, forfeit: null, forfeitPaid: false };
     const updatedWins = [...weeklyWins, entry];
     saveToCloud(scores, history, steals, updatedWins);
     const opponent = person === 'Martin' ? 'Karine' : 'Martin';
     const msg = winner === 'Tie'
       ? `Weekly Showdown ended in a tie, ${totals.martin}–${totals.karine}!`
-      : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}!`;
+      : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}! ${winner === 'Martin' ? 'Karine' : 'Martin'} owes a forfeit 😈`;
     notifyOpponent(opponent, '🏆 Weekly Showdown result', msg);
   }, [history, weeklyWins]);
 
@@ -330,6 +343,13 @@ export default function App() {
   const daysLeftInWeek = 6 - ((dayOfWeek + 6) % 7);
   const martinWeekWins = weeklyWins.filter(w => w.winner === 'Martin').length;
   const karineWeekWins = weeklyWins.filter(w => w.winner === 'Karine').length;
+  const latestWin = weeklyWins.length > 0 ? [...weeklyWins].sort((a, b) => b.weekStart.localeCompare(a.weekStart))[0] : null;
+
+  // Update one weekly result (set forfeit / mark forfeit paid) and save it
+  const updateWeeklyWin = (weekStart, patch) => {
+    const updated = weeklyWins.map(w => w.weekStart === weekStart ? { ...w, ...patch } : w);
+    saveToCloud(scores, history, steals, updated);
+  };
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
@@ -474,6 +494,7 @@ export default function App() {
           <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '8px' }}>
             {weekLeader ? `${weekLeader} leads this week` : 'Tied this week'} · {daysLeftInWeek === 0 ? 'last day — ends tonight!' : `${daysLeftInWeek} day${daysLeftInWeek === 1 ? '' : 's'} left`}
           </div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>This week's loser owes the winner a forfeit 😈</div>
           {weeklyWins.length > 0 && (
             <div style={{ marginTop: '10px', borderTop: '1px solid #1e293b', paddingTop: '8px' }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px' }}>👑 Hall of Champions — Martin {martinWeekWins} · Karine {karineWeekWins}</div>
@@ -482,6 +503,40 @@ export default function App() {
                   Week of {fmtShortDate(w.weekStart)}: <strong style={{ color: w.winner === 'Martin' ? '#38bdf8' : w.winner === 'Karine' ? '#f472b6' : '#94a3b8' }}>{w.winner === 'Tie' ? 'Tie' : `${w.winner} won`}</strong> ({w.martin}–{w.karine})
                 </div>
               ))}
+            </div>
+          )}
+          {latestWin && latestWin.winner !== 'Tie' && (
+            <div style={{ marginTop: '10px', borderTop: '1px solid #1e293b', paddingTop: '8px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f472b6', marginBottom: '6px' }}>💸 Forfeit — week of {fmtShortDate(latestWin.weekStart)}</div>
+              {!latestWin.forfeit ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <select value={forfeitPick} onChange={e => setForfeitPick(e.target.value)} style={s.input}>
+                    {FORFEIT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    <option value="__custom">Custom…</option>
+                  </select>
+                  {forfeitPick === '__custom' && (
+                    <input type="text" placeholder="Type the forfeit…" value={forfeitCustom} onChange={e => setForfeitCustom(e.target.value)} style={s.input} />
+                  )}
+                  <button
+                    onClick={() => {
+                      const f = forfeitPick === '__custom' ? forfeitCustom.trim() : forfeitPick;
+                      if (!f) return;
+                      updateWeeklyWin(latestWin.weekStart, { forfeit: f });
+                      setForfeitCustom('');
+                    }}
+                    style={{ ...s.primaryBtn, background: '#db2777', fontSize: '0.85rem', padding: '8px 12px' }}
+                  >
+                    Set forfeit for {latestWin.winner === 'Martin' ? 'Karine' : 'Martin'}
+                  </button>
+                </div>
+              ) : !latestWin.forfeitPaid ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>{latestWin.winner === 'Martin' ? 'Karine' : 'Martin'} owes: <strong style={{ color: '#f8fafc' }}>{latestWin.forfeit}</strong></span>
+                  <button onClick={() => updateWeeklyWin(latestWin.weekStart, { forfeitPaid: true })} style={{ ...s.smallBtn, color: '#4ade80', borderColor: '#4ade80' }}>✓ Paid</button>
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: 700 }}>✓ Forfeit settled: {latestWin.forfeit}</div>
+              )}
             </div>
           )}
         </div>
