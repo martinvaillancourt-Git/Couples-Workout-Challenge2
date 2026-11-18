@@ -210,6 +210,7 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [celebration, setCelebration] = useState(null);
+  const [heartsKey, setHeartsKey] = useState(0);
 
   // Real-time cloud sync with a 3-second connection timeout fallback
   useEffect(() => {
@@ -348,6 +349,10 @@ export default function App() {
     };
     const updatedHistory = [entry, ...history];
 
+    // Taking the lead with a log is a win moment — floating hearts.
+    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
+    if (scores[who] <= scores[opponent] && updatedScores[who] > updatedScores[opponent]) triggerHearts();
+
     saveToCloud(updatedScores, updatedHistory, steals);
     setRepInput('');
     setNoteInput('');
@@ -377,6 +382,7 @@ export default function App() {
     };
     const updatedHistory = [entry, ...history];
 
+    triggerHearts();
     saveToCloud(updatedScores, updatedHistory, updatedSteals);
     notifyOpponent(opponent, `⚡ ${who} stole 50 reps!`, `${who} claimed the Rep Steal — +50 for them, -50 for you!`);
   };
@@ -423,10 +429,17 @@ export default function App() {
   const prevUnlockedIdsRef = useRef(null);
   const prevRanksRef = useRef(null);
   const celebrateTimerRef = useRef(null);
+  const heartsTimerRef = useRef(null);
   const showCelebration = (c) => {
     setCelebration(c);
     if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current);
     celebrateTimerRef.current = setTimeout(() => setCelebration(null), 5000);
+  };
+  // Floating hearts burst for win moments (taking the lead, claiming a steal)
+  const triggerHearts = () => {
+    setHeartsKey(k => k + 1);
+    if (heartsTimerRef.current) clearTimeout(heartsTimerRef.current);
+    heartsTimerRef.current = setTimeout(() => setHeartsKey(0), 2500);
   };
   useEffect(() => {
     const ids = unlockedTrophies.map(t => t.id);
@@ -841,6 +854,14 @@ export default function App() {
               <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fbbf24' }}>{celebration.title}</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{celebration.subtitle}</div>
             </div>
+          </div>
+        )}
+
+        {heartsKey > 0 && (
+          <div key={heartsKey} style={{ position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)', zIndex: 49, pointerEvents: 'none' }}>
+            {['❤️', '💕', '❤️', '💖', '❤️'].map((h, i) => (
+              <span key={i} style={{ display: 'inline-block', fontSize: i % 2 ? '1.2rem' : '1.6rem', margin: '0 4px', animation: `floatHeart 2s ease-out ${i * 0.15}s forwards` }}>{h}</span>
+            ))}
           </div>
         )}
       </div>
