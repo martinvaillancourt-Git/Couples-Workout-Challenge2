@@ -606,32 +606,39 @@ export default function App() {
   // (their total is less than half of the opponent's).
   const isBehindByHalf = (mine, theirs) => theirs > 0 && mine < theirs / 2;
 
-  // Alley pops up when Martin is behind by more than 50% (max once a day)
+  // Alley pops up for Martin; Johnny Depp pops up for Karine
   const showMotivation = () => {
     setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
     setMotivationPic(ALLEY_PICS[Math.floor(Math.random() * ALLEY_PICS.length)]);
   };
-  useEffect(() => {
-    if (person !== 'Martin') return;
-    if (!isBehindByHalf(scores.Martin, scores.Karine)) return;
-    const today = new Date().toISOString().split('T')[0];
-    if (localStorage.getItem('alleyMotivationLastShown') === today) return;
-    localStorage.setItem('alleyMotivationLastShown', today);
-    showMotivation();
-  }, [scores, person]);
-
-  // Johnny Depp pops up when Karine is behind by more than 50% (max once a day)
   const showKarineMotivation = () => {
     setMotivation(KARINE_MOTIVATION_LINES[Math.floor(Math.random() * KARINE_MOTIVATION_LINES.length)]);
     setMotivationPic(JOHNNY_PICS[Math.floor(Math.random() * JOHNNY_PICS.length)]);
   };
+
+  // Motivation pop-up: checked at noon and at 6 PM (local time). When the
+  // player is behind by more than 50% on total reps, the pop-up shows —
+  // at most once per window per day. The timer also catches the moment
+  // when the app is already open as noon / 6 PM arrives.
+  const checkMotivation = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const slot = hour === 12 ? 'noon' : hour === 18 ? '18' : null;
+    if (!slot) return;
+    const mine = person === 'Martin' ? scores.Martin : scores.Karine;
+    const theirs = person === 'Martin' ? scores.Karine : scores.Martin;
+    if (!isBehindByHalf(mine, theirs)) return;
+    const key = person === 'Martin' ? 'alleyMotivationLastShown' : 'johnnyMotivationLastShown';
+    const today = now.toISOString().split('T')[0];
+    if (localStorage.getItem(key) === `${today}-${slot}`) return;
+    localStorage.setItem(key, `${today}-${slot}`);
+    if (person === 'Martin') showMotivation();
+    else showKarineMotivation();
+  };
   useEffect(() => {
-    if (person !== 'Karine') return;
-    if (!isBehindByHalf(scores.Karine, scores.Martin)) return;
-    const today = new Date().toISOString().split('T')[0];
-    if (localStorage.getItem('johnnyMotivationLastShown') === today) return;
-    localStorage.setItem('johnnyMotivationLastShown', today);
-    showKarineMotivation();
+    checkMotivation();
+    const timer = setInterval(checkMotivation, 60000);
+    return () => clearInterval(timer);
   }, [scores, person]);
   useEffect(() => {
     const ids = unlockedTrophies.map(t => t.id);
