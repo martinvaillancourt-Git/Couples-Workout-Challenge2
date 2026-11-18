@@ -887,7 +887,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ ...s.stealBanner, borderColor: isStealWindow ? '#f59e0b' : '#334155', background: isStealWindow ? 'rgba(245, 158, 11, 0.15)' : '#111827' }}>
+        <div style={{ ...s.stealBanner, borderColor: isStealWindow ? '#f59e0b' : '#334155', background: isStealWindow ? 'rgba(245, 158, 11, 0.15)' : '#000000' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '1.4rem' }}>⚡</span>
             <div>
@@ -1096,7 +1096,7 @@ export default function App() {
                         height: '72px',
                         borderRadius: '10px',
                         border: `2px solid ${isSel ? '#fbbf24' : (mReps > 0 || kReps > 0) ? '#334155' : '#1e293b'}`,
-                        background: isSel ? '#1e293b' : '#090d16',
+                        background: isSel ? '#1e293b' : '#000000',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -1143,7 +1143,7 @@ export default function App() {
               {TROPHIES.map(t => {
                 const unlocked = t.check(martinReps, karineReps, history, streaks, weeklyWins);
                 return (
-                  <div key={t.id} style={{ background: '#090d16', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '12px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
+                  <div key={t.id} style={{ background: '#000000', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '12px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
                     <span style={{ fontSize: '2rem', display: 'block', marginBottom: '6px' }}>{t.icon}</span>
                     <h4 style={{ margin: '0 0 2px 0', fontSize: '0.9rem' }}>{t.title}</h4>
                     <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>{t.desc}</p>
@@ -1162,7 +1162,7 @@ export default function App() {
             <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.1rem' }}>🎯 Challenges</h3>
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Live races and goals — progress updates as you log. Daily challenges reset at midnight, weekly ones on Monday.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>⚡ Daily Dash</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: dashWinner ? '#fbbf24' : '#94a3b8' }}>{dashWinner ? `🏆 ${dashWinner} won!` : 'In progress'}</span>
@@ -1172,7 +1172,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', todayTotals.Karine, 50)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💯 Century Day</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (todayTotals.Martin >= 100 || todayTotals.Karine >= 100) ? '#fbbf24' : '#94a3b8' }}>
@@ -1184,7 +1184,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', todayTotals.Karine, 100)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🌟 Perfect Week</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekDaysLogged.Martin >= 7 || weekDaysLogged.Karine >= 7) ? '#fbbf24' : '#94a3b8' }}>
@@ -1196,7 +1196,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', weekDaysLogged.Karine, 7)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🚀 Weekly 500</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: week500Winner ? '#fbbf24' : '#94a3b8' }}>{week500Winner ? `🏆 ${week500Winner} won!` : 'In progress'}</span>
@@ -1206,7 +1206,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', weekTotals.karine, 500)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💨 Sprint 100</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: sprint100Winner ? '#fbbf24' : '#94a3b8' }}>{sprint100Winner ? `🏆 ${sprint100Winner} won!` : 'In progress'}</span>
@@ -1216,7 +1216,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', todayTotals.Karine, 100)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🏁 Weekly 1,000</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: week1000Winner ? '#fbbf24' : '#94a3b8' }}>{week1000Winner ? `🏆 ${week1000Winner} won!` : 'In progress'}</span>
@@ -1226,7 +1226,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', weekTotals.karine, 1000)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🏆 Race to 5,000</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (martinReps >= 5000 || karineReps >= 5000) ? '#fbbf24' : '#94a3b8' }}>
@@ -1238,7 +1238,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', karineReps, 5000)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🔥 Streak Starter</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (streaks.Martin.current >= 3 || streaks.Karine.current >= 3) ? '#fbbf24' : '#94a3b8' }}>
@@ -1250,7 +1250,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', Math.min(streaks.Karine.current, 3), 3)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🌅 Sunrise Club</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
@@ -1262,7 +1262,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', earlyCount.Karine, 3)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🦉 Night Owl</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
@@ -1274,7 +1274,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', nightCount.Karine, 3)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>💪 Biggest Session</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
@@ -1286,7 +1286,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', biggestSession.Karine, 50)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🎉 Weekend Warrior</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fbbf24' }}>
@@ -1298,7 +1298,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', weekendTotals.Karine, 150)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>📈 Beat Last Week</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekTotals.martin >= Math.max(lastWeekTotals.Martin, 50) || weekTotals.karine >= Math.max(lastWeekTotals.Karine, 50)) ? '#fbbf24' : '#94a3b8' }}>
@@ -1310,7 +1310,7 @@ export default function App() {
                 {progressRow('#f472b6', 'Karine', weekTotals.karine, Math.max(lastWeekTotals.Karine, 50))}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🤝 Tag Team</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: tagTeamDays >= 7 ? '#fbbf24' : '#94a3b8' }}>{tagTeamDays >= 7 ? '✅ Perfect team week!' : `${tagTeamDays}/7 days together`}</span>
@@ -1319,7 +1319,7 @@ export default function App() {
                 {progressRow('#22c55e', 'Together', tagTeamDays, 7)}
               </div>
 
-              <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
+              <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🎯 Combined 1,000</span>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (weekTotals.martin + weekTotals.karine) >= 1000 ? '#fbbf24' : '#94a3b8' }}>{(weekTotals.martin + weekTotals.karine) >= 1000 ? '✅ 1,000 reached!' : 'In progress'}</span>
@@ -1343,7 +1343,7 @@ export default function App() {
                 <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
               )}
             </div>
-            <div style={{ background: 'rgba(17,24,39,0.95)', border: '2px solid #fbbf24', borderRadius: '14px', padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', whiteSpace: 'nowrap' }}>
+            <div style={{ background: 'rgba(0,0,0,0.95)', border: '2px solid #fbbf24', borderRadius: '14px', padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', whiteSpace: 'nowrap' }}>
               <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fbbf24' }}>{celebration.title}</div>
               <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{celebration.subtitle}</div>
             </div>
@@ -1373,31 +1373,31 @@ export default function App() {
 }
 
 const s = {
-  page: { minHeight: '100vh', background: '#090d16', backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #090d16 70%)', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '12px 10px', boxSizing: 'border-box' },
+  page: { minHeight: '100vh', background: '#000000', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '12px 10px', boxSizing: 'border-box' },
   container: { maxWidth: '1000px', margin: '0 auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '14px', borderBottom: '1px solid #1e293b', paddingBottom: '12px' },
   badge: { fontSize: '0.65rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56,189,248,0.12)', padding: '3px 8px', borderRadius: '99px', letterSpacing: '0.05em' },
   title: { fontSize: '1.4rem', fontWeight: 800, margin: '4px 0 2px 0', letterSpacing: '-0.02em' },
   subtitle: { fontSize: '0.82rem', color: '#94a3b8', margin: 0 },
   scoreCardsRow: { display: 'flex', gap: '8px', width: '100%', justifyContent: 'space-between' },
-  playerCard: { background: '#111827', border: '2px solid', borderRadius: '12px', padding: '10px 12px', flex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
+  playerCard: { background: '#000000', border: '2px solid', borderRadius: '12px', padding: '10px 12px', flex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
   scoreNum: { fontSize: '1.25rem', fontWeight: 800 },
   unit: { fontSize: '0.7rem', color: '#64748b', fontWeight: 600 },
   tauntBanner: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fde047', padding: '10px 12px', borderRadius: '12px', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 500 },
   stealBanner: { display: 'flex', flexDirection: 'column', gap: '8px', border: '2px solid', borderRadius: '14px', padding: '12px 14px', marginBottom: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
-  panel: { background: '#111827', border: '1px solid #1e293b', borderRadius: '14px', padding: '14px', marginBottom: '14px', boxShadow: '0 6px 16px rgba(0,0,0,0.4)' },
+  panel: { background: '#000000', border: '1px solid #1e293b', borderRadius: '14px', padding: '14px', marginBottom: '14px', boxShadow: '0 6px 16px rgba(0,0,0,0.4)' },
   tugOuter: { display: 'flex', height: '28px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden', border: '1px solid #334155' },
   tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '10px', fontSize: '0.7rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
   tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '10px', fontSize: '0.7rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
   tugFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, fontSize: '1rem' },
-  nav: { display: 'flex', flexDirection: 'column', gap: '10px', background: '#111827', padding: '10px 12px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '14px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' },
+  nav: { display: 'flex', flexDirection: 'column', gap: '10px', background: '#000000', padding: '10px 12px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '14px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' },
   navBtn: { border: 'none', padding: '8px 10px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' },
   toggleBtn: { border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.82rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' },
   grid2: { display: 'grid', gridTemplateColumns: '1fr', gap: '14px' },
-  quickBtn: { background: '#090d16', border: '1px solid #334155', color: '#f8fafc', padding: '10px 8px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center' },
-  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#090d16', color: '#fff', fontSize: '0.9rem', outline: 'none', width: '100%' },
+  quickBtn: { background: '#000000', border: '1px solid #334155', color: '#f8fafc', padding: '10px 8px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center' },
+  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #334155', background: '#000000', color: '#fff', fontSize: '0.9rem', outline: 'none', width: '100%' },
   primaryBtn: { padding: '10px 16px', borderRadius: '8px', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 3px 10px rgba(0,0,0,0.3)' },
-  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090d16', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #1e293b' },
+  feedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#000000', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #1e293b' },
   calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
   smallBtn: { background: '#1e293b', border: '1px solid #334155', color: '#fff', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }
 };
