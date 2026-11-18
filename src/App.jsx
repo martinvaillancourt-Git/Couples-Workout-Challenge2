@@ -141,7 +141,7 @@ export default function App() {
   const dayOfWeek = nowObj.getDay();
   const currentHour = nowObj.getHours();
   const todayDateStr = nowObj.toISOString().split('T')[0];
-  const isStealWindow = (dayOfWeek === 3 || dayOfWeek === 0) && currentHour === 13;
+  const isStealWindow = (dayOfWeek === 3 || dayOfWeek === 0) && currentHour === 12;
   const stealKey = `${todayDateStr}-${dayOfWeek === 3 ? 'Wed' : 'Sun'}`;
   const stealClaimedBy = steals[stealKey];
 
@@ -193,7 +193,7 @@ export default function App() {
       id: Date.now(),
       person: who,
       reps: 50,
-      label: '⚡ 1PM Rep Steal (+50 / -50)',
+      label: '⚡ 12PM Rep Steal (+50 / -50)',
       isSteal: true,
       date: now.toISOString().split('T')[0],
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -308,9 +308,9 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '1.4rem' }}>⚡</span>
             <div>
-              <strong style={{ color: '#fbbf24', display: 'block', fontSize: '0.95rem' }}>Wed &amp; Sun 1:00 PM Rep Steal</strong>
+              <strong style={{ color: '#fbbf24', display: 'block', fontSize: '0.95rem' }}>Wed &amp; Sun 12:00 PM Rep Steal</strong>
               <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                {stealClaimedBy ? `Claimed today by ${stealClaimedBy}! 🦹‍♂️` : isStealWindow ? 'Active now! Claim 50 reps and steal!' : 'Opens Wed & Sun at 1:00 PM.'}
+                {stealClaimedBy ? `Claimed today by ${stealClaimedBy}! 🦹‍♂️` : isStealWindow ? 'Active now! Claim 50 reps and steal!' : 'Opens Wed & Sun at 12:00 PM.'}
               </span>
             </div>
           </div>
