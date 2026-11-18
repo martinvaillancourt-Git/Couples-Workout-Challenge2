@@ -102,10 +102,10 @@ const MOTIVATION_LINES = [
 
 // Alley's rotating pictures for the motivation pop-up (12 total)
 const ALLEY_PICS = [
-  '/alley-pics/alley-01.webp',
-  '/alley-pics/alley-02.webp',
-  '/alley-pics/alley-03.webp',
-  '/alley-pics/alley-04.webp',
+  '/alley-pics/alley-01b.webp',
+  '/alley-pics/alley-02b.webp',
+  '/alley-pics/alley-03b.webp',
+  '/alley-pics/alley-04b.webp',
   '/alley-pics/alley-06.webp',
   '/alley-pics/alley-07.webp',
   '/alley-pics/alley-08b.webp',
