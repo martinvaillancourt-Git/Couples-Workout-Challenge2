@@ -34,6 +34,21 @@ const TROPHIES = [
   { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
   { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
   { id: 'weekly_champ', title: 'Weekly Champion', desc: 'Won a Weekly Showdown', icon: '🏆', check: (m, k, h, s, w) => (w || []).some(x => x.winner === 'Martin' || x.winner === 'Karine') },
+  { id: 'perfect_week', title: 'Perfect Week', desc: 'Logged reps every day Monday to Sunday in a week', icon: '🌟', check: (m, k, h) => {
+    const daysByPerson = {};
+    h.forEach(i => {
+      daysByPerson[i.person] = daysByPerson[i.person] || new Set();
+      daysByPerson[i.person].add(i.date);
+    });
+    return Object.values(daysByPerson).some(days => {
+      const weeks = {};
+      days.forEach(ds => {
+        const monday = getMondayStr(ds);
+        weeks[monday] = (weeks[monday] || 0) + 1;
+      });
+      return Object.values(weeks).some(count => count >= 7);
+    });
+  } },
   { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
 ];
 
