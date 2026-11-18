@@ -84,6 +84,22 @@ const FORFEIT_OPTIONS = [
   'Loser does a chore of the winner’s choice',
 ];
 
+// Alley's motivational lines for the full-screen pop-up (Martin only)
+const MOTIVATION_LINES = [
+  "You've got this, Martin. One more set and you're ahead of Karine.",
+  "Karine isn't going to beat herself. Get moving.",
+  'Fifty reps a day keeps the couch away. Go!',
+  "Your streak is alive. Don't let it die today.",
+  "Every rep you log is a rep Karine didn't.",
+  'The A7s sound even better after a workout. Probably science.',
+  'No excuses — ten minutes is a full set. Go earn it.',
+  "You're one good session from taking the lead. Take it.",
+  'Remember the forfeit. Somebody owes somebody. Make it her.',
+  "Stronger every day. That's the whole deal. Now go.",
+  'Push-ups. Squats. Glute bridges. Pick one and start.',
+  "The week won't win itself. Log something.",
+];
+
 function getRank(reps) {
   if (reps >= 2500) return { title: 'Titan Legend', color: '#fbbf24' };
   if (reps >= 1000) return { title: 'Iron Contender', color: '#38bdf8' };
@@ -211,6 +227,7 @@ export default function App() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [heartsKey, setHeartsKey] = useState(0);
+  const [motivation, setMotivation] = useState(null);
 
   // Real-time cloud sync with a 3-second connection timeout fallback
   useEffect(() => {
@@ -519,6 +536,18 @@ export default function App() {
     if (heartsTimerRef.current) clearTimeout(heartsTimerRef.current);
     heartsTimerRef.current = setTimeout(() => setHeartsKey(0), 2500);
   };
+
+  // Alley pops up full screen from time to time (Martin only, max once a day)
+  const showMotivation = () => setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
+  useEffect(() => {
+    if (person !== 'Martin') return;
+    const today = new Date().toISOString().split('T')[0];
+    if (localStorage.getItem('alleyMotivationLastShown') === today) return;
+    if (Math.random() < 0.5) {
+      localStorage.setItem('alleyMotivationLastShown', today);
+      showMotivation();
+    }
+  }, []);
   useEffect(() => {
     const ids = unlockedTrophies.map(t => t.id);
     if (prevUnlockedIdsRef.current === null) {
@@ -612,6 +641,11 @@ export default function App() {
                   style={{ background: notifState === 'on' ? 'rgba(74,222,128,0.15)' : notifState === 'denied' ? 'rgba(248,113,113,0.12)' : 'rgba(56,189,248,0.12)', color: notifState === 'on' ? '#4ade80' : notifState === 'denied' ? '#f87171' : '#38bdf8', border: '1px solid #1e293b', borderRadius: '99px', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: notifState === 'on' ? 'default' : 'pointer' }}
                 >
                   {notifState === 'on' ? '🔔 Notifications on' : notifState === 'denied' ? '🔕 Notifications blocked' : '🔔 Enable notifications'}
+                </button>
+              )}
+              {person === 'Martin' && (
+                <button onClick={showMotivation} style={{ background: 'rgba(168,85,247,0.15)', color: '#e9d5ff', border: '1px solid #1e293b', borderRadius: '99px', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                  💬 Motivate me
                 </button>
               )}
               <span style={{ fontSize: '0.72rem', fontWeight: 700, color: syncStatus.includes('Live') ? '#4ade80' : '#fbbf24' }}>{syncStatus}</span>
@@ -1147,6 +1181,16 @@ export default function App() {
             {['❤️', '💕', '❤️', '💖', '❤️'].map((h, i) => (
               <span key={i} style={{ display: 'inline-block', fontSize: i % 2 ? '1.2rem' : '1.6rem', margin: '0 4px', animation: `floatHeart 2s ease-out ${i * 0.15}s forwards` }}>{h}</span>
             ))}
+          </div>
+        )}
+
+        {motivation && (
+          <div onClick={() => setMotivation(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'linear-gradient(180deg, rgba(9,13,22,0.97), rgba(30,27,75,0.97))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
+            <img src="/alley-avatar.webp" alt="Alley" style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
+            <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '2px', color: '#fbbf24', textTransform: 'uppercase', marginBottom: '8px' }}>Alley says</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.4, maxWidth: '420px', marginBottom: '24px' }}>{motivation}</div>
+            <button onClick={() => setMotivation(null)} style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '99px', padding: '12px 28px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer' }}>Let's go! 💪</button>
+            <div style={{ marginTop: '14px', fontSize: '0.75rem', color: '#94a3b8' }}>Tap anywhere to close</div>
           </div>
         )}
       </div>
