@@ -1186,7 +1186,7 @@ export default function App() {
 
         {motivation && (
           <div onClick={() => setMotivation(null)} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'linear-gradient(180deg, rgba(9,13,22,0.97), rgba(30,27,75,0.97))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
-            <img src="/alley-avatar.webp" alt="Alley" style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
+            <video src="/alley-moving.mp4" poster="/alley-avatar.webp" autoPlay muted loop playsInline style={{ width: 'min(72vw, 320px)', height: 'min(72vw, 320px)', objectFit: 'cover', borderRadius: '50%', border: '4px solid #fbbf24', boxShadow: '0 0 60px rgba(251,191,36,0.35)', marginBottom: '20px', animation: 'popIn 0.4s ease-out' }} />
             <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '2px', color: '#fbbf24', textTransform: 'uppercase', marginBottom: '8px' }}>Alley says</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.4, maxWidth: '420px', marginBottom: '24px' }}>{motivation}</div>
             <button onClick={() => setMotivation(null)} style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '99px', padding: '12px 28px', fontSize: '1rem', fontWeight: 800, cursor: 'pointer' }}>Let's go! 💪</button>
