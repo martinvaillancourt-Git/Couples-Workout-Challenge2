@@ -100,7 +100,7 @@ const MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Alley's rotating pictures for the motivation pop-up (grows to 12)
+// Alley's rotating pictures for the motivation pop-up (12 total)
 const ALLEY_PICS = [
   '/alley-pics/alley-01.webp',
   '/alley-pics/alley-02.webp',
@@ -110,6 +110,10 @@ const ALLEY_PICS = [
   '/alley-pics/alley-06.webp',
   '/alley-pics/alley-07.webp',
   '/alley-pics/alley-08.webp',
+  '/alley-pics/alley-09.webp',
+  '/alley-pics/alley-10.webp',
+  '/alley-pics/alley-11.webp',
+  '/alley-pics/alley-12.webp',
 ];
 
 function getRank(reps) {
