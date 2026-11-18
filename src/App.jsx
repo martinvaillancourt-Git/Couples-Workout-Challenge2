@@ -132,7 +132,7 @@ const ALLEY_PICS = [
   '/alley-pics/alley-13.webp',
   '/alley-pics/alley-14b.webp',
   '/alley-pics/alley-15.webp',
-  '/alley-pics/alley-16b.webp',
+  '/alley-pics/alley-16c.webp',
   '/alley-pics/alley-17.webp',
   '/alley-pics/alley-18.webp',
   '/alley-pics/alley-19.webp',
