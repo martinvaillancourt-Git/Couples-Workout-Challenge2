@@ -106,6 +106,10 @@ const ALLEY_PICS = [
   '/alley-pics/alley-02.webp',
   '/alley-pics/alley-03.webp',
   '/alley-pics/alley-04.webp',
+  '/alley-pics/alley-05.webp',
+  '/alley-pics/alley-06.webp',
+  '/alley-pics/alley-07.webp',
+  '/alley-pics/alley-08.webp',
 ];
 
 function getRank(reps) {
