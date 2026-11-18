@@ -1,21 +1,20 @@
 // OneSignal Web Push (v16 SDK, loaded from CDN in index.html).
 //
-// SETUP (5 minutes, once, in the OneSignal dashboard at onesignal.com):
-//   1. Create a free account, then "New App" -> Web Push.
-//   2. Copy the App ID and paste it into ONESIGNAL_APP_ID below.
-//   3. In Settings -> Keys & IDs, copy the REST API Key and paste it into
-//      ONESIGNAL_REST_API_KEY below. The key lets the app itself send a push
-//      to the other player when reps are logged. It is visible in the
-//      deployed JavaScript — acceptable for a private two-person app, and
-//      you can rotate it anytime in the dashboard.
+// SETUP (done 2026-11-18): free OneSignal account under
+// martin.vaillancourt@gmail.com, app "Couples Workout Challenge"
+// (App ID below), Web Push platform pointed at the production Vercel URL.
+//
+// SECURITY: the REST API key is NOT in this repo. Pushes are sent through
+// our own Vercel serverless function (api/notify.js), which reads the key
+// from the Vercel project environment variable ONESIGNAL_REST_API_KEY.
+// The App ID below is public by design (it ships in the SDK snippet).
 //
 // How it works: each phone is identified by the "Active Logger" selected in
 // the app (Martin or Karine). When one person logs reps, a push is sent to
 // the other person's external user id. Keep your own name selected as the
 // Active Logger on your own phone so pushes go to the right person.
 
-export const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID';
-export const ONESIGNAL_REST_API_KEY = 'YOUR_ONESIGNAL_REST_API_KEY';
+export const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 
 export const isOneSignalConfigured = () =>
   ONESIGNAL_APP_ID && !ONESIGNAL_APP_ID.startsWith('YOUR_');
@@ -83,24 +82,15 @@ export function setActivePlayer(person) {
   });
 }
 
-// Send a push to the other player via the OneSignal REST API.
+// Send a push to the other player via our own Vercel serverless function
+// (/api/notify.js), which holds the OneSignal REST API key server-side.
 export async function notifyOpponent(opponent, title, message) {
-  if (!isOneSignalConfigured() || ONESIGNAL_REST_API_KEY.startsWith('YOUR_')) {
-    return;
-  }
+  if (!isOneSignalConfigured()) return;
   try {
-    await fetch('https://api.onesignal.com/notifications', {
+    await fetch('/api/notify', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        include_external_user_ids: [opponent.toLowerCase()],
-        headings: { en: title },
-        contents: { en: message },
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opponent: opponent.toLowerCase(), title, message }),
     });
   } catch (err) {
     console.error('Failed to send push:', err);
