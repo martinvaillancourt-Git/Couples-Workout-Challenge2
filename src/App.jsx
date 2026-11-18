@@ -30,6 +30,9 @@ const TROPHIES = [
   }},
   { id: 'ten_workouts', title: 'Consistency Champ', desc: 'Completed 10 separate logging sessions', icon: '📅', check: (m, k, h) => h.length >= 10 },
   { id: 'thief', title: 'Rep Stealer', desc: 'Successfully claimed a Wednesday or Sunday Rep Steal', icon: '🦹‍♂️', check: (m, k, h) => h.some(i => i.isSteal) },
+  { id: 'streak_3', title: 'On Fire', desc: 'Reached a 3-day logging streak', icon: '🔥', check: (m, k, h, s) => (s?.Martin.best >= 3 || s?.Karine.best >= 3) },
+  { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
+  { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
 ];
 
 function getRank(reps) {
@@ -38,6 +41,43 @@ function getRank(reps) {
   if (reps >= 400) return { title: 'Rivalry Warrior', color: '#a855f7' };
   if (reps >= 100) return { title: 'Active Challenger', color: '#4ade80' };
   return { title: 'Rookie', color: '#94a3b8' };
+}
+
+// Streaks are computed from history dates (same YYYY-MM-DD convention the
+// app already stamps entries with). A streak stays alive through today if
+// the player logged yesterday but not yet today.
+function dateStrNDaysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split('T')[0];
+}
+
+function computeStreaks(history) {
+  const result = {};
+  for (const who of ['Martin', 'Karine']) {
+    const days = new Set(history.filter(h => h.person === who).map(h => h.date));
+    let current = 0;
+    const startOffset = days.has(dateStrNDaysAgo(0)) ? 0 : 1;
+    for (let i = startOffset; ; i++) {
+      if (days.has(dateStrNDaysAgo(i))) current++;
+      else break;
+    }
+    let best = 0;
+    let run = 0;
+    let prev = null;
+    for (const ds of [...days].sort()) {
+      if (prev) {
+        const diff = (new Date(ds) - new Date(prev)) / 86400000;
+        run = diff === 1 ? run + 1 : 1;
+      } else {
+        run = 1;
+      }
+      best = Math.max(best, run);
+      prev = ds;
+    }
+    result[who] = { current, best, loggedToday: days.has(dateStrNDaysAgo(0)) };
+  }
+  return result;
 }
 
 export default function App() {
@@ -222,6 +262,7 @@ export default function App() {
 
   const martinRank = getRank(martinReps);
   const karineRank = getRank(karineReps);
+  const streaks = computeStreaks(history);
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
@@ -287,6 +328,12 @@ export default function App() {
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: martinRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{martinRank.title}</span>
               </div>
               <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '4px', color: streaks.Martin.current > 0 ? '#fb923c' : '#64748b' }}>
+                {streaks.Martin.current > 0 ? `🔥 ${streaks.Martin.current}-day streak` : 'No streak yet — log today!'}
+                {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
+                {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Martin.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
+              </div>
             </div>
             <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }} className={animateScore === 'Karine' ? 'pulse-karine' : ''}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -294,6 +341,12 @@ export default function App() {
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: karineRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{karineRank.title}</span>
               </div>
               <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '4px', color: streaks.Karine.current > 0 ? '#fb923c' : '#64748b' }}>
+                {streaks.Karine.current > 0 ? `🔥 ${streaks.Karine.current}-day streak` : 'No streak yet — log today!'}
+                {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
+                {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Karine.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
+              </div>
             </div>
           </div>
         </header>
@@ -492,7 +545,7 @@ export default function App() {
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Unlock achievements together as your reps climb!</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {TROPHIES.map(t => {
-                const unlocked = t.check(martinReps, karineReps, history);
+                const unlocked = t.check(martinReps, karineReps, history, streaks);
                 return (
                   <div key={t.id} style={{ background: '#090d16', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '12px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
                     <span style={{ fontSize: '2rem', display: 'block', marginBottom: '6px' }}>{t.icon}</span>
