@@ -70,6 +70,7 @@ const TROPHIES = [
   } },
   { id: 'hat_trick', title: 'Hat Trick', desc: 'Won 3 Weekly Showdowns', icon: '🎩', check: (m, k, h, s, w) => (w || []).filter(x => x.winner === 'Martin').length >= 3 || (w || []).filter(x => x.winner === 'Karine').length >= 3 },
   { id: 'total_10000', title: '10,000 Rep Legend', desc: 'Hit 10,000 total reps combined', icon: '💠', check: (m, k, h) => m + k >= 10000 },
+  { id: 'freeze_saver', title: 'Ice Cold', desc: 'Saved a streak with a freeze', icon: '🧊', check: (m, k, h, s) => (s?.Martin.freezeSaved || s?.Karine.freezeSaved) },
   { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
 ];
 
@@ -100,30 +101,59 @@ function dateStrNDaysAgo(n) {
   return d.toISOString().split('T')[0];
 }
 
+// Streak freeze: each player gets 1 freeze per week (Monday–Sunday). A
+// missed day is forgiven automatically if that week's freeze is still
+// unused — so one slip doesn't kill the streak. All of this is computed
+// from the history log, no extra stored state.
 function computeStreaks(history) {
   const result = {};
   for (const who of ['Martin', 'Karine']) {
     const days = new Set(history.filter(h => h.person === who).map(h => h.date));
-    let current = 0;
-    const startOffset = days.has(dateStrNDaysAgo(0)) ? 0 : 1;
-    for (let i = startOffset; ; i++) {
-      if (days.has(dateStrNDaysAgo(i))) current++;
-      else break;
-    }
-    let best = 0;
-    let run = 0;
-    let prev = null;
-    for (const ds of [...days].sort()) {
-      if (prev) {
-        const diff = (new Date(ds) - new Date(prev)) / 86400000;
-        run = diff === 1 ? run + 1 : 1;
-      } else {
-        run = 1;
+    const todayStr = dateStrNDaysAgo(0);
+    const currentWeek = getMondayStr(todayStr);
+
+    // Walk back from a start day, counting logged days; a missed day is
+    // forgiven once per week (that week's freeze). Returns the run length,
+    // whether a freeze was used, and which weeks' freezes were consumed.
+    const walkBack = (startDs, allowFreeze) => {
+      let count = 0;
+      let freezeUsed = false;
+      const usedWeeks = new Set();
+      let d = new Date(startDs + 'T12:00:00');
+      for (;;) {
+        const ds = d.toISOString().split('T')[0];
+        if (days.has(ds)) {
+          count++;
+          d.setDate(d.getDate() - 1);
+          continue;
+        }
+        if (allowFreeze) {
+          const wk = getMondayStr(ds);
+          if (!usedWeeks.has(wk)) {
+            usedWeeks.add(wk);
+            freezeUsed = true;
+            d.setDate(d.getDate() - 1);
+            continue;
+          }
+        }
+        break;
       }
-      best = Math.max(best, run);
-      prev = ds;
-    }
-    result[who] = { current, best, loggedToday: days.has(dateStrNDaysAgo(0)) };
+      return { count, freezeUsed, usedWeeks };
+    };
+
+    const startDs = days.has(todayStr) ? todayStr : addDaysStr(todayStr, -1);
+    const cur = walkBack(startDs, true);
+    const bestWithFreeze = Math.max(0, ...[...days].map(ds => walkBack(ds, true).count));
+    const bestWithoutFreeze = Math.max(0, ...[...days].map(ds => walkBack(ds, false).count));
+
+    result[who] = {
+      current: cur.count,
+      best: bestWithFreeze,
+      loggedToday: days.has(todayStr),
+      freezeUsed: cur.freezeUsed,
+      freezeSaved: bestWithFreeze > bestWithoutFreeze,
+      freezeAvailableThisWeek: !cur.usedWeeks.has(currentWeek),
+    };
   }
   return result;
 }
@@ -454,6 +484,7 @@ export default function App() {
                 {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
                 {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
                 {streaks.Martin.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
+                {streaks.Martin.current > 0 && <span style={{ color: '#7dd3fc' }}> · {streaks.Martin.freezeAvailableThisWeek ? '❄️ Freeze ready' : '❄️ Freeze used'}</span>}
               </div>
             </div>
             <div style={{ ...s.playerCard, borderColor: karineReps > martinReps ? '#f472b6' : '#1e293b' }} className={animateScore === 'Karine' ? 'pulse-karine' : ''}>
@@ -467,6 +498,7 @@ export default function App() {
                 {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
                 {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
                 {streaks.Karine.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
+                {streaks.Karine.current > 0 && <span style={{ color: '#7dd3fc' }}> · {streaks.Karine.freezeAvailableThisWeek ? '❄️ Freeze ready' : '❄️ Freeze used'}</span>}
               </div>
             </div>
           </div>
