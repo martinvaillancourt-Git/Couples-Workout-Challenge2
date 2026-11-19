@@ -1,26 +1,32 @@
-// Vercel serverless function: motivation push for the player who is behind.
+// Vercel serverless function: all scheduled pushes — the motivation push
+// and the evening reminder.
 //
-// Triggered by Vercel Cron (see vercel.json) at 16:00, 17:00, 22:00 and
-// 23:00 UTC — one of the first two is noon in America/Toronto year-round
-// (EST in winter, EDT in summer) and one of the last two is 6 PM. The
-// function only acts when the Toronto hour is 12 or 18, so exactly two
-// of the four daily runs do anything.
+// WHY ONE FUNCTION: Vercel Hobby allows at most 2 cron jobs, each firing
+// at most once per day. The old vercel.json had multi-slot schedules
+// ("0 22,23 * * *" and "0 16,17,22,23 * * *") and the Nov 19 deploy
+// failed validation with: "Hobby accounts are limited to daily cron jobs."
+// So vercel.json now has exactly two once-daily triggers, both hitting
+// this function, which tells them apart by the Toronto hour:
+//   17:00 UTC -> noon Toronto in winter (EST), 1 PM in summer (EDT)
+//   23:00 UTC -> 6 PM Toronto in winter (EST), 7 PM in summer (EDT)
+// The 1-hour summer drift is the Hobby trade-off (Pro would allow the
+// exact hours year-round). The slot mapping below (12/13 -> noon,
+// 18/19 -> evening) covers both seasons, and each slot is deduped in
+// the Firestore doc so a second trigger the same day does nothing.
+// (The earlier setup used two separate once-daily entries per UTC hour
+// for EST/EDT coverage; that needed 6 entries once motivation joined,
+// over the 2-job limit.)
 //
-// What it does: reads the challenge doc from Firestore, checks who is
-// behind by more than 50% on total reps (their total is less than half
-// of the opponent's — the same rule as the in-app motivation pop-up),
-// and pushes each of them a motivation notification via OneSignal: a
-// random motivation line plus a random motivation picture (Alley for
-// Martin, Johnny Depp for Karine). Unlike the in-app pop-up, this one
-// arrives even with the app closed. It records lastMotivationPush per
-// player in the doc (YYYY-MM-DD-noon / YYYY-MM-DD-18) so a second
-// trigger in the same window does nothing.
+// Noon slot: pushes whichever player is behind by more than 50% on
+// total reps (same rule as the in-app motivation pop-up), with a random
+// motivation line + picture. Evening slot: the same behind-check, PLUS
+// the reminder for players who haven't logged today (with a streak
+// warning if one is live).
 //
-// Security: same pattern as api/reminder.js — Vercel Cron sends
-// `Authorization: Bearer <CRON_SECRET>`; when CRON_SECRET is set, any
-// non-cron call is rejected — except ?dryRun=1, which is read-only
-// (reports what would be sent, sends nothing) so the check can be
-// tested by hand.
+// Security: Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`;
+// when CRON_SECRET is set, any non-cron call is rejected — except
+// ?dryRun=1, which is read-only (reports what would be sent, sends
+// nothing) so the check can be tested by hand.
 //
 // The Firebase web API key below is public (it ships in the client code);
 // the Firestore doc is read the same way the app reads it. The
@@ -67,7 +73,7 @@ const KARINE_MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Toronto date + hour (noon and 6 PM are Toronto-time things)
+// Toronto date + hour (noon and evening are Toronto-time things)
 function torontoParts() {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Toronto',
@@ -81,6 +87,18 @@ function torontoParts() {
 // True when the player is behind by more than 50% on total reps
 // (their total is less than half of the opponent's).
 const isBehindByHalf = (mine, theirs) => theirs > 0 && mine < theirs / 2;
+
+// Consecutive days logged ending yesterday (a streak still alive today)
+function streakEndingYesterday(dateSet, todayStr) {
+  let n = 0;
+  const d = new Date(todayStr + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  while (dateSet.has(d.toISOString().split('T')[0])) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
 
 async function sendPush(externalId, title, body) {
   const pic = motivationPicFor(externalId);
@@ -113,12 +131,11 @@ export default async function handler(req, res) {
     }
   }
 
-  const slot = hour === 12 ? 'noon' : hour === 18 ? '18' : null;
-
-  // Only the noon and 6 PM Toronto runs act; the other cron triggers
-  // are no-ops (they exist only to cover EST/EDT).
+  // Noon slot is Toronto hour 12 (EST) or 13 (EDT); evening slot is 18
+  // (EST) or 19 (EDT). Any other hour is a no-op (unless dryRun).
+  const slot = hour === 12 || hour === 13 ? 'noon' : hour === 18 || hour === 19 ? '18' : null;
   if (!dryRun && !slot) {
-    return res.status(200).json({ skipped: true, reason: `Toronto hour is ${hour}, motivation push only fires at 12 and 18` });
+    return res.status(200).json({ skipped: true, reason: `Toronto hour is ${hour}, scheduled pushes only fire at noon and in the evening` });
   }
 
   const docRes = await fetch(`${docUrl}?key=${FIREBASE_API_KEY}`);
@@ -143,7 +160,7 @@ export default async function handler(req, res) {
     return true;
   });
 
-  const wouldSend = behind.map(p => {
+  const wouldSendMotivation = behind.map(p => {
     const lines = p === 'Martin' ? MOTIVATION_LINES : KARINE_MOTIVATION_LINES;
     return {
       person: p,
@@ -152,18 +169,47 @@ export default async function handler(req, res) {
     };
   });
 
+  // Evening slot only: remind players who haven't logged today.
+  const historyVals = fields.history?.arrayValue?.values || [];
+  const entries = historyVals
+    .map(v => v.mapValue?.fields)
+    .filter(Boolean)
+    .map(f => ({ person: f.person?.stringValue, date: f.date?.stringValue }));
+  const lastReminder = fields.lastReminderDate?.stringValue || null;
+  const loggedToday = {
+    Martin: entries.some(e => e.person === 'Martin' && e.date === today),
+    Karine: entries.some(e => e.person === 'Karine' && e.date === today),
+  };
+  const doReminder = slot === '18' || dryRun;
+  const alreadyReminded = !dryRun && lastReminder === today;
+  const wouldSendReminder = doReminder && !alreadyReminded
+    ? ['Martin', 'Karine']
+        .filter(p => !loggedToday[p])
+        .map(p => {
+          const dates = new Set(entries.filter(e => e.person === p).map(e => e.date));
+          const streak = streakEndingYesterday(dates, today);
+          return {
+            person: p,
+            pic: motivationPicFor(p.toLowerCase()),
+            message: streak > 0
+              ? `🔥 Your ${streak}-day streak is on the line — log some reps before the day ends!`
+              : `💪 You haven't logged any reps yet today — log some to keep the challenge going!`,
+          };
+        })
+    : [];
+
   if (dryRun) {
-    return res.status(200).json({ today, hour, slot, totals, behind, wouldSend });
+    return res.status(200).json({ today, hour, slot, totals, loggedToday, motivation: { behind, wouldSend: wouldSendMotivation }, reminder: { wouldSend: wouldSendReminder } });
   }
 
   if (!process.env.ONESIGNAL_REST_API_KEY) {
     return res.status(500).json({ error: 'Push not configured on server' });
   }
 
-  const results = [];
-  for (const w of wouldSend) {
+  const results = { motivation: [], reminder: [] };
+  for (const w of wouldSendMotivation) {
     const sent = await sendPush(w.person.toLowerCase(), "💪 You're falling behind!", w.message);
-    results.push({ person: w.person, sent });
+    results.motivation.push({ person: w.person, sent });
   }
 
   // Record the window per player who was pushed, so a second trigger in
@@ -179,6 +225,20 @@ export default async function handler(req, res) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { lastMotivationPush: { mapValue: { fields: newFields } } } }),
+    }).catch(() => {});
+  }
+
+  if (slot === '18') {
+    for (const r of wouldSendReminder) {
+      const sent = await sendPush(r.person.toLowerCase(), '⏰ No reps logged yet today', r.message);
+      results.reminder.push({ person: r.person, sent });
+    }
+    // Mark today as reminded (even when nobody needed one) so a second
+    // trigger the same day is a no-op.
+    await fetch(`${docUrl}?key=${FIREBASE_API_KEY}&updateMask.fieldPaths=lastReminderDate`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { lastReminderDate: { stringValue: today } } }),
     }).catch(() => {});
   }
 
