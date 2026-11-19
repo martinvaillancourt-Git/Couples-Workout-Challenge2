@@ -522,12 +522,17 @@ export default function App() {
     setSteals(newSteals);
     setWeeklyWins(newWeeklyWins);
     try {
+      // Merge, don't replace: setDoc without merge would wipe the
+      // server-written fields (lastMotivationPush, lastReminderDate)
+      // that the scheduled pushes use for dedupe — and a Reset would
+      // have wiped them too. (Found 2026-11-19 after a Reset tap
+      // zeroed the doc.)
       await setDoc(challengeDocRef, {
         scores: newScores,
         history: newHistory,
         steals: newSteals,
         weeklyWins: newWeeklyWins
-      });
+      }, { merge: true });
     } catch (err) {
       console.error('Failed to save to cloud:', err);
     }
