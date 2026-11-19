@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { opponent, title, message } = req.body || {};
+  const { opponent, title, message, picFor } = req.body || {};
   if (!opponent || !title || !message) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -25,7 +25,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Push not configured on server' });
   }
 
-  const pic = motivationPicFor(opponent);
+  // The picture that rides along: the sender's for a taunt (picFor),
+  // the recipient's for steal/crown pushes (default).
+  const picId = ['martin', 'karine'].includes(picFor) ? picFor : opponent;
+  const pic = motivationPicFor(picId);
 
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',

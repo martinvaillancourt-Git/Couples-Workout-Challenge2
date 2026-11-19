@@ -413,6 +413,9 @@ export default function App() {
   const [weeklyWins, setWeeklyWins] = useState([]);
 
   const [repInput, setRepInput] = useState('');
+  const [tauntInput, setTauntInput] = useState('');
+  const [tauntSending, setTauntSending] = useState(false);
+  const [tauntSent, setTauntSent] = useState(false);
   const [forfeitPick, setForfeitPick] = useState(FORFEIT_OPTIONS[0]);
   const [forfeitCustom, setForfeitCustom] = useState('');
   const [dailyTaunt, setDailyTaunt] = useState('');
@@ -569,6 +572,21 @@ export default function App() {
 
     saveToCloud(updatedScores, updatedHistory, steals);
     setRepInput('');
+  };
+
+  // Manual taunt: sends a push to the other player with a personal
+  // message, carrying the sender's picture (Alley for Martin, Johnny
+  // for Karine). 10s cooldown after sending to stop double-taps.
+  const sendTaunt = async () => {
+    const msg = tauntInput.trim();
+    if (!msg || tauntSending) return;
+    const opponent = person === 'Martin' ? 'Karine' : 'Martin';
+    setTauntSending(true);
+    await notifyOpponent(opponent, `😏 ${person} taunts you!`, msg, person);
+    setTauntInput('');
+    setTauntSent(true);
+    setTimeout(() => setTauntSent(false), 4000);
+    setTimeout(() => setTauntSending(false), 10000);
   };
 
   const claimSteal = (who) => {
@@ -1068,6 +1086,26 @@ export default function App() {
                 <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>🦍 +50 Reps</button>
                 <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>👑 +100 Reps</button>
               </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                <input
+                  type="text"
+                  placeholder={`Taunt ${person === 'Martin' ? 'Karine' : 'Martin'}…`}
+                  value={tauntInput}
+                  maxLength={140}
+                  onChange={e => setTauntInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') sendTaunt(); }}
+                  style={{ ...s.input, flex: 1 }}
+                />
+                <button
+                  onClick={sendTaunt}
+                  disabled={tauntSending || !tauntInput.trim()}
+                  style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777', opacity: tauntSending || !tauntInput.trim() ? 0.5 : 1 }}
+                >
+                  😏 Taunt
+                </button>
+              </div>
+              {tauntSent && <p style={{ color: '#4ade80', fontSize: '0.82rem', margin: '0 0 14px' }}>✓ Taunt sent!</p>}
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input

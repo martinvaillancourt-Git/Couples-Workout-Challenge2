@@ -86,13 +86,15 @@ export function setActivePlayer(person) {
 
 // Send a push to the other player via our own Vercel serverless function
 // (/api/notify.js), which holds the OneSignal REST API key server-side.
-export async function notifyOpponent(opponent, title, message) {
+// picFor (optional) picks whose motivation picture rides along — the
+// sender's for taunts, the recipient's otherwise.
+export async function notifyOpponent(opponent, title, message, picFor) {
   if (!isOneSignalConfigured()) return;
   try {
     await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ opponent: opponent.toLowerCase(), title, message }),
+      body: JSON.stringify({ opponent: opponent.toLowerCase(), title, message, picFor: (picFor || opponent).toLowerCase() }),
     });
   } catch (err) {
     console.error('Failed to send push:', err);
