@@ -1461,18 +1461,18 @@ export default function App() {
         {celebration && (
           <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, pointerEvents: 'none', textAlign: 'center' }}>
             <div style={{ position: 'relative', display: 'inline-block' }}>
-              <span style={{ position: 'absolute', left: '-14px', top: '6px', fontSize: '1rem', animation: 'floatHeart 2s ease-out infinite' }}>❤️</span>
-              <span style={{ position: 'absolute', right: '-14px', top: '0px', fontSize: '1rem', animation: 'floatHeart 2s ease-out 0.6s infinite' }}>✨</span>
-              <span style={{ position: 'absolute', right: '-22px', top: '14px', fontSize: '0.85rem', animation: 'floatHeart 2s ease-out 1.1s infinite' }}>❤️</span>
+              <span style={{ position: 'absolute', left: '-18px', top: '8px', fontSize: '1.3rem', animation: 'floatHeart 2s ease-out infinite' }}>❤️</span>
+              <span style={{ position: 'absolute', right: '-18px', top: '0px', fontSize: '1.3rem', animation: 'floatHeart 2s ease-out 0.6s infinite' }}>✨</span>
+              <span style={{ position: 'absolute', right: '-28px', top: '18px', fontSize: '1.1rem', animation: 'floatHeart 2s ease-out 1.1s infinite' }}>❤️</span>
               {celebration.pic ? (
-                <img src={celebration.pic} alt="Celebration" style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '50%', border: '3px solid #fbbf24', boxShadow: '0 0 24px rgba(251,191,36,0.4)', display: 'inline-block', animation: 'popIn 0.4s ease-out' }} />
+                <img src={celebration.pic} alt="Celebration" style={{ width: '128px', height: '128px', objectFit: 'cover', borderRadius: '50%', border: '3px solid #fbbf24', boxShadow: '0 0 24px rgba(251,191,36,0.4)', display: 'inline-block', animation: 'popIn 0.4s ease-out' }} />
               ) : (
-                <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
+                <span style={{ fontSize: '4rem', display: 'inline-block', animation: 'danceMove 0.9s ease-in-out infinite' }}>{celebration.emoji}</span>
               )}
             </div>
-            <div style={{ background: 'rgba(0,0,0,0.95)', border: '2px solid #fbbf24', borderRadius: '14px', padding: '10px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', whiteSpace: 'nowrap' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fbbf24' }}>{celebration.title}</div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{celebration.subtitle}</div>
+            <div style={{ background: 'rgba(0,0,0,0.95)', border: '2px solid #fbbf24', borderRadius: '18px', padding: '16px 24px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'popIn 0.4s ease-out', maxWidth: '92vw' }}>
+              <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fbbf24' }}>{celebration.title}</div>
+              <div style={{ fontSize: '1rem', color: '#cbd5e1' }}>{celebration.subtitle}</div>
             </div>
           </div>
         )}
