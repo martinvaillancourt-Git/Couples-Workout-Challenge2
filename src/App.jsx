@@ -435,7 +435,6 @@ export default function App() {
 
   const [calDate, setCalDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(localDateStr(new Date()));
-  const [resetConfirm, setResetConfirm] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [heartsKey, setHeartsKey] = useState(0);
   const [motivation, setMotivation] = useState(null);
@@ -1099,7 +1098,7 @@ export default function App() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '14px' }}>
                 <button onClick={() => logReps(person, 10, 'Quick Set')} style={s.quickBtn}>⚡ +10 Reps</button>
-                <button onClick={() => logReps(person, 25, 'Power Set')} style={s.quickBtn}>🔥 +25 Reps</button>
+                <button onClick={() => logReps(person, 20, 'Power Set')} style={s.quickBtn}>🔥 +20 Reps</button>
                 <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>🦍 +50 Reps</button>
                 <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>👑 +100 Reps</button>
               </div>
@@ -1146,11 +1145,6 @@ export default function App() {
                 <h3 style={{ margin: 0, fontSize: '1.1rem' }}>📋 Rep Feed</h3>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {history.length > 0 && <button onClick={undoLast} style={s.smallBtn}>Undo</button>}
-                  {!resetConfirm ? (
-                    <button onClick={() => setResetConfirm(true)} style={{ ...s.smallBtn, color: '#f87171' }}>Reset</button>
-                  ) : (
-                    <button onClick={() => { saveToCloud({ Martin: 0, Karine: 0 }, [], {}); setResetConfirm(false); }} style={{ ...s.smallBtn, background: '#dc2626', color: '#fff' }}>Confirm</button>
-                  )}
                 </div>
               </div>
 
