@@ -551,8 +551,8 @@ export default function App() {
   const WELCOME_CLIPS = {
     Martin: {
       wave: ['/welcome/alley-177-anim.mp4', '/welcome/alley-181-anim.mp4', '/welcome/alley-182-anim.mp4', '/welcome/alley-186-anim.mp4'],
-      sad: ['/welcome/alley-bunny-sad.mp4'],
-      urgent: ['/welcome/alley-bunny-urgent.mp4'],
+      sad: [],
+      urgent: [],
       clap: ['/welcome/alley-bunny-clap.mp4']
     },
     Karine: {
