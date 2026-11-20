@@ -308,10 +308,22 @@ function getRank(reps) {
 // Streaks are computed from history dates (same YYYY-MM-DD convention the
 // app already stamps entries with). A streak stays alive through today if
 // the player logged yesterday but not yet today.
+// Dates are Toronto-local: the app stamps entries with the date on the
+// user's wall clock, not UTC. toISOString() is UTC, so after 7 PM EST
+// (8 PM EDT) it returns tomorrow's date — reps logged Thursday evening
+// were stamped Friday (found 2026-11-20). Every date string in this file
+// must come from localDateStr.
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function dateStrNDaysAgo(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 // Streak freeze: each player gets 1 freeze per week (Monday–Sunday). A
@@ -334,7 +346,7 @@ function computeStreaks(history) {
       const usedWeeks = new Set();
       let d = new Date(startDs + 'T12:00:00');
       for (;;) {
-        const ds = d.toISOString().split('T')[0];
+        const ds = localDateStr(d);
         if (days.has(ds)) {
           count++;
           d.setDate(d.getDate() - 1);
@@ -376,7 +388,7 @@ function computeStreaks(history) {
 function addDaysStr(ds, n) {
   const d = new Date(ds + 'T12:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 function getMondayStr(ds) {
@@ -422,7 +434,7 @@ export default function App() {
   const [animateScore, setAnimateScore] = useState(null);
 
   const [calDate, setCalDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDay, setSelectedDay] = useState(localDateStr(new Date()));
   const [resetConfirm, setResetConfirm] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [heartsKey, setHeartsKey] = useState(0);
@@ -541,7 +553,7 @@ export default function App() {
   const nowObj = new Date();
   const dayOfWeek = nowObj.getDay();
   const currentHour = nowObj.getHours();
-  const todayDateStr = nowObj.toISOString().split('T')[0];
+  const todayDateStr = localDateStr(nowObj);
   const isStealWindow = (dayOfWeek === 3 || dayOfWeek === 0) && currentHour === 12;
   const stealKey = `${todayDateStr}-${dayOfWeek === 3 ? 'Wed' : 'Sun'}`;
   const stealClaimedBy = steals[stealKey];
@@ -565,7 +577,7 @@ export default function App() {
       reps: num,
       label: label || 'Workout Reps',
       isSteal,
-      date: now.toISOString().split('T')[0],
+      date: localDateStr(now),
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
     };
@@ -612,7 +624,7 @@ export default function App() {
       reps: 50,
       label: '⚡ 12PM Rep Steal (+50 / -50)',
       isSteal: true,
-      date: now.toISOString().split('T')[0],
+      date: localDateStr(now),
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
     };
@@ -789,7 +801,7 @@ export default function App() {
     const theirs = person === 'Martin' ? scores.Karine : scores.Martin;
     if (!isBehindByHalf(mine, theirs)) return;
     const key = person === 'Martin' ? 'alleyMotivationLastShown' : 'johnnyMotivationLastShown';
-    const today = now.toISOString().split('T')[0];
+    const today = localDateStr(now);
     if (localStorage.getItem(key) === `${today}-${slot}`) return;
     localStorage.setItem(key, `${today}-${slot}`);
     if (person === 'Martin') showMotivation();
