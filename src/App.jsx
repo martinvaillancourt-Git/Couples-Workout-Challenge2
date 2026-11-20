@@ -414,7 +414,15 @@ function fmtShortDate(ds) {
 
 export default function App() {
   const [tab, setTab] = useState('arena');
-  const [person, setPerson] = useState('Martin');
+  // Active Logger — remembered on each phone, so Karine's phone opens
+  // as Karine and Martin's as Martin (and the welcome character matches).
+  const [person, setPerson] = useState(() => {
+    try { return localStorage.getItem('activeLogger') || 'Martin'; } catch { return 'Martin'; }
+  });
+  const setActiveLogger = (p) => {
+    try { localStorage.setItem('activeLogger', p); } catch {}
+    setPerson(p);
+  };
   const [syncStatus, setSyncStatus] = useState('Connecting...');
   // True once the first cloud snapshot has arrived. The celebration
   // effect must wait for this — before it, trophies/ranks are computed
@@ -529,6 +537,38 @@ export default function App() {
   useEffect(() => {
     if (notifState === 'on') setActivePlayer(person);
   }, [person, notifState]);
+
+  // Welcome splash: once a day, when the app opens, the Active Logger's
+  // character (Alley for Martin, Johnny Depp for Karine) appears full
+  // screen with an encouraging line. Tap anywhere to dismiss. The clips
+  // are shot on pure black and shown full screen, so the black
+  // background vanishes into the app's black background — the character
+  // just stands there over the app.
+  const WELCOME_LINES = {
+    Martin: [
+      "Let's get after it — today's reps are waiting.",
+      "Morning, champ. One set at a time.",
+      "Karine's not going to beat herself. Go get it.",
+      "Strong start today. You've got this."
+    ],
+    Karine: [
+      "Let's get after it — today's reps are waiting.",
+      "Morning, champ. One set at a time.",
+      "Martin's not going to beat himself. Go get it.",
+      "Strong start today. You've got this."
+    ]
+  };
+  const [welcome, setWelcome] = useState(null);
+  useEffect(() => {
+    const today = localDateStr(new Date());
+    if (localStorage.getItem('welcomeShown') === today) return;
+    localStorage.setItem('welcomeShown', today);
+    const lines = WELCOME_LINES[person] || WELCOME_LINES.Martin;
+    setWelcome({
+      video: person === 'Martin' ? '/welcome/alley-welcome.mp4' : '/welcome/johnny-welcome.mp4',
+      line: lines[Math.floor(Math.random() * lines.length)]
+    });
+  }, []);
 
   // Crown last week's showdown winner the first time the app opens after
   // the week ends (weeks run Monday–Sunday). The result is saved to the
@@ -869,6 +909,15 @@ export default function App() {
 
   return (
     <div style={s.page}>
+      {welcome && (
+        <div onClick={() => setWelcome(null)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000', cursor: 'pointer' }}>
+          <video src={welcome.video} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: '9%', textAlign: 'center', padding: '0 24px', textShadow: '0 2px 12px #000, 0 0 4px #000' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.3 }}>{welcome.line}</div>
+            <div style={{ marginTop: '12px', fontSize: '0.9rem', color: '#94a3b8' }}>Tap anywhere to continue</div>
+          </div>
+        </div>
+      )}
       {notifBanner && (
         <div style={{ marginBottom: '12px', padding: '12px 14px', background: 'rgba(251,191,36,0.1)', border: '1px solid #f59e0b', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
@@ -1094,8 +1143,8 @@ export default function App() {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'space-between', borderTop: '1px solid #1e293b', paddingTop: '10px' }}>
             <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Active Logger:</span>
             <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={() => setPerson('Martin')} style={{ ...s.toggleBtn, background: person === 'Martin' ? '#0284c7' : '#1e293b' }}>Martin</button>
-              <button onClick={() => setPerson('Karine')} style={{ ...s.toggleBtn, background: person === 'Karine' ? '#db2777' : '#1e293b' }}>Karine</button>
+              <button onClick={() => setActiveLogger('Martin')} style={{ ...s.toggleBtn, background: person === 'Martin' ? '#0284c7' : '#1e293b' }}>Martin</button>
+              <button onClick={() => setActiveLogger('Karine')} style={{ ...s.toggleBtn, background: person === 'Karine' ? '#db2777' : '#1e293b' }}>Karine</button>
             </div>
           </div>
         </div>
