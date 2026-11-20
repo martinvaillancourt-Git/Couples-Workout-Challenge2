@@ -538,37 +538,72 @@ export default function App() {
     if (notifState === 'on') setActivePlayer(person);
   }, [person, notifState]);
 
-  // Welcome splash: once a day, when the app opens, the Active Logger's
-  // character (Alley for Martin, Johnny Depp for Karine) appears full
-  // screen with an encouraging line. Tap anywhere to dismiss. The clips
-  // are shot on pure black and shown full screen, so the black
-  // background vanishes into the app's black background — the character
-  // just stands there over the app.
+  // Welcome splash: the Active Logger's character (Alley for Martin,
+  // Johnny Depp for Karine) appears full screen when the app opens, with
+  // an expression that matches the reps. Twice a day at most — first open
+  // of the day, and first open after 6 PM. The mood waits for the cloud
+  // data: before sync, scores are 0/0 and everyone would look "at zero".
+  // Moods: sad = nothing logged today, and only after 3 PM (in the
+  // morning zero is normal, nobody has logged yet); urgent = behind on
+  // totals; clap = ahead on totals; wave = tied. Each mood has up to two
+  // clips and the app picks one at random, so it isn't the same clip
+  // every time. A mood with no clips falls back to the wave.
+  const WELCOME_CLIPS = {
+    Martin: {
+      wave: ['/welcome/alley-welcome.mp4'],
+      sad: ['/welcome/alley-sad.mp4', '/welcome/alley-sad2.mp4'],
+      urgent: ['/welcome/alley-urgent.mp4', '/welcome/alley-urgent2.mp4'],
+      clap: ['/welcome/alley-clap.mp4', '/welcome/alley-clap2.mp4']
+    },
+    Karine: {
+      wave: ['/welcome/johnny-welcome.mp4'],
+      sad: ['/welcome/johnny-sad.mp4', '/welcome/johnny-sad2.mp4'],
+      urgent: [],
+      clap: ['/welcome/johnny-clap.mp4']
+    }
+  };
   const WELCOME_LINES = {
-    Martin: [
-      "Let's get after it — today's reps are waiting.",
-      "Morning, champ. One set at a time.",
-      "Karine's not going to beat herself. Go get it.",
-      "Strong start today. You've got this."
-    ],
-    Karine: [
-      "Let's get after it — today's reps are waiting.",
-      "Morning, champ. One set at a time.",
-      "Martin's not going to beat himself. Go get it.",
-      "Strong start today. You've got this."
-    ]
+    Martin: {
+      wave: ["Let's get after it — today's reps are waiting.", 'Morning, champ. One set at a time.'],
+      sad: ["Nothing logged yet today — don't leave it at zero.", "Come on, champ. The day's getting away from you."],
+      urgent: ["Karine's pulling away — time to close the gap!", "You're behind. Bring it back!"],
+      clap: ["You're in front — keep the crown!", "Big winner energy. Don't let up!"]
+    },
+    Karine: {
+      wave: ["Let's get after it — today's reps are waiting.", 'Morning, champ. One set at a time.'],
+      sad: ["Nothing logged yet today — don't leave it at zero.", "Come on, champ. The day's getting away from you."],
+      urgent: ["Martin's pulling away — time to close the gap!", "You're behind. Bring it back!"],
+      clap: ["You're in front — keep the crown!", "Big winner energy. Don't let up!"]
+    }
   };
   const [welcome, setWelcome] = useState(null);
+  const welcomeShownRef = useRef(null);
   useEffect(() => {
-    const today = localDateStr(new Date());
-    if (localStorage.getItem('welcomeShown') === today) return;
-    localStorage.setItem('welcomeShown', today);
-    const lines = WELCOME_LINES[person] || WELCOME_LINES.Martin;
-    setWelcome({
-      video: person === 'Martin' ? '/welcome/alley-welcome.mp4' : '/welcome/johnny-welcome.mp4',
-      line: lines[Math.floor(Math.random() * lines.length)]
-    });
-  }, []);
+    if (!syncReady) return;
+    const now = new Date();
+    const today = localDateStr(now);
+    const slot = now.getHours() < 18 ? 'day' : 'evening';
+    const marker = `welcomeShown-${today}-${slot}`;
+    if (welcomeShownRef.current === marker) return;
+    if (localStorage.getItem(marker)) return;
+    welcomeShownRef.current = marker;
+    localStorage.setItem(marker, '1');
+    const mine = person === 'Martin' ? scores.Martin : scores.Karine;
+    const theirs = person === 'Martin' ? scores.Karine : scores.Martin;
+    const todayReps = history
+      .filter(h => h.date === today && h.person === person)
+      .reduce((a, h) => a + (h.reps || 0), 0);
+    let mood = 'wave';
+    if (todayReps === 0 && now.getHours() >= 15) mood = 'sad';
+    else if (mine < theirs) mood = 'urgent';
+    else if (mine > theirs) mood = 'clap';
+    const clips = (WELCOME_CLIPS[person] || WELCOME_CLIPS.Martin)[mood] || [];
+    const video = clips.length > 0
+      ? clips[Math.floor(Math.random() * clips.length)]
+      : (WELCOME_CLIPS[person] || WELCOME_CLIPS.Martin).wave[0];
+    const lines = (WELCOME_LINES[person] || WELCOME_LINES.Martin)[mood] || [];
+    setWelcome({ video, line: lines[Math.floor(Math.random() * lines.length)] });
+  }, [syncReady]);
 
   // Crown last week's showdown winner the first time the app opens after
   // the week ends (weeks run Monday–Sunday). The result is saved to the
