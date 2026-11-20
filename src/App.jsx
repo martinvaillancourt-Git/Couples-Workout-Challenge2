@@ -416,6 +416,11 @@ export default function App() {
   const [tab, setTab] = useState('arena');
   const [person, setPerson] = useState('Martin');
   const [syncStatus, setSyncStatus] = useState('Connecting...');
+  // True once the first cloud snapshot has arrived. The celebration
+  // effect must wait for this — before it, trophies/ranks are computed
+  // from empty state, so every already-earned trophy looked "new" and
+  // the toast reappeared on every app open (found 2026-11-20).
+  const [syncReady, setSyncReady] = useState(false);
   const [notifState, setNotifState] = useState('off');
   // Banner shown when the app opens from a tapped notification — the
   // message that was in the notification, so it isn't lost when the
@@ -455,6 +460,7 @@ export default function App() {
       challengeDocRef,
       async (snapshot) => {
         isConnected = true;
+        setSyncReady(true);
         clearTimeout(timeout);
         if (snapshot.exists()) {
           const data = snapshot.data();
@@ -769,6 +775,17 @@ export default function App() {
     if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current);
     celebrateTimerRef.current = setTimeout(() => setCelebration(null), 5000);
   };
+  // A celebration shows at most once per day per message (same trophy
+  // or same rank-up): the date is stamped in localStorage, so even if
+  // the effect fires again — reload, re-sync, the other phone's save —
+  // the same toast never repeats within a day.
+  const showCelebrationOncePerDay = (key, c) => {
+    const today = localDateStr(new Date());
+    const marker = `celebrationShown-${key}`;
+    if (localStorage.getItem(marker) === today) return;
+    localStorage.setItem(marker, today);
+    showCelebration(c);
+  };
   // Floating hearts burst for win moments (taking the lead)
   const triggerHearts = () => {
     setHeartsKey(k => k + 1);
@@ -815,6 +832,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, [scores, person]);
   useEffect(() => {
+    if (!syncReady) return;
     const ids = unlockedTrophies.map(t => t.id);
     if (prevUnlockedIdsRef.current === null) {
       prevUnlockedIdsRef.current = ids;
@@ -825,17 +843,17 @@ export default function App() {
     prevUnlockedIdsRef.current = ids;
     if (newOnes.length > 0) {
       const t = newOnes[0];
-      showCelebration({ pic: celebrationPic(person), title: `🎉 New trophy: ${t.title}!`, subtitle: t.desc });
+      showCelebrationOncePerDay(`trophy-${t.id}`, { pic: celebrationPic(person), title: `🎉 New trophy: ${t.title}!`, subtitle: t.desc });
       return;
     }
     const prevRanks = prevRanksRef.current || {};
     prevRanksRef.current = { Martin: martinRank.title, Karine: karineRank.title };
     if (prevRanks.Martin && prevRanks.Martin !== martinRank.title) {
-      showCelebration({ pic: celebrationPic('Martin'), title: '🎉 Martin ranked up!', subtitle: `Now ${martinRank.title}` });
+      showCelebrationOncePerDay(`rankup-Martin-${martinRank.title}`, { pic: celebrationPic('Martin'), title: '🎉 Martin ranked up!', subtitle: `Now ${martinRank.title}` });
     } else if (prevRanks.Karine && prevRanks.Karine !== karineRank.title) {
-      showCelebration({ pic: celebrationPic('Karine'), title: '🎉 Karine ranked up!', subtitle: `Now ${karineRank.title}` });
+      showCelebrationOncePerDay(`rankup-Karine-${karineRank.title}`, { pic: celebrationPic('Karine'), title: '🎉 Karine ranked up!', subtitle: `Now ${karineRank.title}` });
     }
-  }, [unlockedTrophies, martinRank.title, karineRank.title]);
+  }, [syncReady, unlockedTrophies, martinRank.title, karineRank.title]);
 
   const yr = calDate.getFullYear();
   const mo = calDate.getMonth();
