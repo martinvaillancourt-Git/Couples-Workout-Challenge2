@@ -586,6 +586,24 @@ export default function App() {
     setTimeout(() => setAnimateScore(null), 600);
   };
 
+  // Burst push: when a player logs more than 50 real reps (steals don't
+  // count) within a rolling hour, the other player gets an automatic
+  // taunt-style push with the count. At most one per player per hour, so
+  // a big session doesn't spam. Entry ids are Date.now() timestamps, so
+  // the last hour is entries with id > now - 3600000.
+  const checkBurstPush = (who, hist) => {
+    const nowMs = Date.now();
+    const lastHour = hist.filter(e => e.person === who && !e.isSteal && e.id > nowMs - 3600000);
+    const total = lastHour.reduce((s, e) => s + e.reps, 0);
+    if (total <= 50) return;
+    const key = `burstPushLastSent-${who}`;
+    const lastSent = Number(localStorage.getItem(key) || 0);
+    if (nowMs - lastSent < 3600000) return;
+    localStorage.setItem(key, String(nowMs));
+    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
+    notifyOpponent(opponent, `🔥 ${who} is on fire!`, `${who} just logged ${total} reps in the last hour! Your move. 😏`, who, 'burst');
+  };
+
   const logReps = (who, count, label, isSteal = false) => {
     const num = Number(count);
     if (!num || num <= 0) return;
@@ -611,6 +629,7 @@ export default function App() {
     if (scores[who] <= scores[opponent] && updatedScores[who] > updatedScores[opponent]) triggerHearts();
 
     saveToCloud(updatedScores, updatedHistory, steals);
+    checkBurstPush(who, updatedHistory);
     setRepInput('');
   };
 

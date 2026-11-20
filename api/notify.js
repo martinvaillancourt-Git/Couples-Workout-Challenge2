@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   const picId = ['martin', 'karine'].includes(picFor) ? picFor : opponent;
   const pic = motivationPicFor(picId);
 
-  const type = ['taunt', 'steal', 'crown'].includes(notifType) ? notifType : 'notify';
+  const type = ['taunt', 'steal', 'crown', 'burst'].includes(notifType) ? notifType : 'notify';
 
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',
