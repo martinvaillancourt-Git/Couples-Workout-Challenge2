@@ -576,6 +576,18 @@ export default function App() {
       clap: ["You're in front — keep the crown!", "Big winner energy. Don't let up!"]
     }
   };
+  // Clip pool: the app fetches public/welcome/manifest.json at startup
+  // so new animations join the rotation without a code change. The
+  // built-in map above is the fallback if the fetch fails. A daily job
+  // animates new rotation pictures (up to 6 a day), names each clip
+  // <pic>-anim.mp4, and adds it to the manifest under the mood it fits.
+  const [clipPool, setClipPool] = useState(WELCOME_CLIPS);
+  useEffect(() => {
+    fetch('/welcome/manifest.json', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(m => { if (m && m.Martin && m.Karine) setClipPool(m); })
+      .catch(() => {});
+  }, []);
   const [welcome, setWelcome] = useState(null);
   const welcomeShownRef = useRef(null);
   useEffect(() => {
@@ -597,13 +609,13 @@ export default function App() {
     if (todayReps === 0 && now.getHours() >= 15) mood = 'sad';
     else if (mine < theirs) mood = 'urgent';
     else if (mine > theirs) mood = 'clap';
-    const clips = (WELCOME_CLIPS[person] || WELCOME_CLIPS.Martin)[mood] || [];
+    const clips = (clipPool[person] || clipPool.Martin)[mood] || [];
     const video = clips.length > 0
       ? clips[Math.floor(Math.random() * clips.length)]
-      : (WELCOME_CLIPS[person] || WELCOME_CLIPS.Martin).wave[0];
+      : (clipPool[person] || clipPool.Martin).wave[0];
     const lines = (WELCOME_LINES[person] || WELCOME_LINES.Martin)[mood] || [];
     setWelcome({ video, line: lines[Math.floor(Math.random() * lines.length)] });
-  }, [syncReady]);
+  }, [syncReady, clipPool]);
 
   // Crown last week's showdown winner the first time the app opens after
   // the week ends (weeks run Monday–Sunday). The result is saved to the
