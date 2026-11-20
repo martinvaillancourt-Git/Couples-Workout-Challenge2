@@ -552,8 +552,8 @@ export default function App() {
     Martin: {
       wave: ['/welcome/alley-177-anim.mp4', '/welcome/alley-181-anim.mp4', '/welcome/alley-182-anim.mp4', '/welcome/alley-186-anim.mp4'],
       sad: [],
-      urgent: [],
-      clap: ['/welcome/alley-bunny-clap.mp4']
+      urgent: ['/welcome/alley-orig-urgent.mp4'],
+      clap: ['/welcome/alley-orig-clap.mp4']
     },
     Karine: {
       wave: ['/welcome/johnny-welcome.mp4'],
