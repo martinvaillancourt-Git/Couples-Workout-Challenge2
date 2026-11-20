@@ -50,6 +50,18 @@ export function initOneSignal(onStatus) {
     const permission = OneSignal.Notifications.permission;
     const optedIn = OneSignal.User.PushSubscription.optedIn;
     onStatus && onStatus(permission && optedIn ? 'on' : 'off');
+    // If the app is already open when a notification is tapped, the
+    // service worker focuses this tab instead of opening the launch URL
+    // — so the message would never be shown. The click listener hands
+    // the message to the app instead (App.jsx shows it as a banner).
+    OneSignal.Notifications.addEventListener('click', (event) => {
+      const n = event.notification || {};
+      const d = n.data || {};
+      const title = d.title || n.title || '';
+      const msg = d.msg || n.body || '';
+      if (!title && !msg) return;
+      window.dispatchEvent(new CustomEvent('onesignal-notif-click', { detail: { title, msg } }));
+    });
   });
 }
 
@@ -87,14 +99,16 @@ export function setActivePlayer(person) {
 // Send a push to the other player via our own Vercel serverless function
 // (/api/notify.js), which holds the OneSignal REST API key server-side.
 // picFor (optional) picks whose motivation picture rides along — the
-// sender's for taunts, the recipient's otherwise.
-export async function notifyOpponent(opponent, title, message, picFor) {
+// sender's for taunts, the recipient's otherwise. type ('taunt' /
+// 'steal' / 'crown') tells the app what the notification was, so tapping
+// it can show the message as a banner.
+export async function notifyOpponent(opponent, title, message, picFor, type) {
   if (!isOneSignalConfigured()) return;
   try {
     await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ opponent: opponent.toLowerCase(), title, message, picFor: (picFor || opponent).toLowerCase() }),
+      body: JSON.stringify({ opponent: opponent.toLowerCase(), title, message, picFor: (picFor || opponent).toLowerCase(), notifType: type || 'notify' }),
     });
   } catch (err) {
     console.error('Failed to send push:', err);

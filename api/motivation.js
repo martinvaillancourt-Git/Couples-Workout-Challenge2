@@ -100,8 +100,13 @@ function streakEndingYesterday(dateSet, todayStr) {
   return n;
 }
 
-async function sendPush(externalId, title, body) {
+async function sendPush(externalId, title, body, type) {
   const pic = motivationPicFor(externalId);
+  // Tapping a notification opens the app with the message in the URL, so
+  // the app can show it as a banner instead of the message vanishing
+  // with the notification (reported 2026-11-20). `data` carries the same
+  // message for the in-page click listener (app already open).
+  const url = `${SITE_URL}?notif=${type}&title=${encodeURIComponent(title)}&msg=${encodeURIComponent(body)}`;
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',
     headers: {
@@ -113,7 +118,8 @@ async function sendPush(externalId, title, body) {
       include_external_user_ids: [externalId],
       headings: { en: title },
       contents: { en: body },
-      url: SITE_URL,
+      url,
+      data: { notif: type, title, msg: body },
       chrome_web_image: pic,
       big_picture: pic,
     }),
@@ -160,12 +166,20 @@ export default async function handler(req, res) {
     return true;
   });
 
+  // The message now says the actual score gap first (a bare random line
+  // didn't tell the player what was going on — reported 2026-11-20),
+  // then the random motivation line.
   const wouldSendMotivation = behind.map(p => {
     const lines = p === 'Martin' ? MOTIVATION_LINES : KARINE_MOTIVATION_LINES;
+    const mine = totals[p];
+    const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
+    const opp = p === 'Martin' ? 'Karine' : 'Martin';
+    const message = `${opp} is ahead ${theirs}–${mine} — you're at less than half. ${lines[Math.floor(Math.random() * lines.length)]}`;
     return {
       person: p,
       pic: motivationPicFor(p.toLowerCase()),
-      message: lines[Math.floor(Math.random() * lines.length)],
+      message,
+      url: `${SITE_URL}?notif=motivation&title=${encodeURIComponent("💪 You're falling behind!")}&msg=${encodeURIComponent(message)}`,
     };
   });
 
@@ -188,12 +202,18 @@ export default async function handler(req, res) {
         .map(p => {
           const dates = new Set(entries.filter(e => e.person === p).map(e => e.date));
           const streak = streakEndingYesterday(dates, today);
+          const mine = totals[p];
+          const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
+          const opp = p === 'Martin' ? 'Karine' : 'Martin';
+          const scoreBit = `${opp} is at ${theirs}, you're at ${mine}.`;
+          const message = streak > 0
+            ? `🔥 Your ${streak}-day streak is on the line — ${scoreBit} Log some reps before the day ends!`
+            : `💪 You haven't logged any reps yet today — ${scoreBit} Log some to keep the challenge going!`;
           return {
             person: p,
             pic: motivationPicFor(p.toLowerCase()),
-            message: streak > 0
-              ? `🔥 Your ${streak}-day streak is on the line — log some reps before the day ends!`
-              : `💪 You haven't logged any reps yet today — log some to keep the challenge going!`,
+            message,
+            url: `${SITE_URL}?notif=reminder&title=${encodeURIComponent('⏰ No reps logged yet today')}&msg=${encodeURIComponent(message)}`,
           };
         })
     : [];
@@ -208,7 +228,7 @@ export default async function handler(req, res) {
 
   const results = { motivation: [], reminder: [] };
   for (const w of wouldSendMotivation) {
-    const sent = await sendPush(w.person.toLowerCase(), "💪 You're falling behind!", w.message);
+    const sent = await sendPush(w.person.toLowerCase(), "💪 You're falling behind!", w.message, 'motivation');
     results.motivation.push({ person: w.person, sent });
   }
 
@@ -230,7 +250,7 @@ export default async function handler(req, res) {
 
   if (slot === '18') {
     for (const r of wouldSendReminder) {
-      const sent = await sendPush(r.person.toLowerCase(), '⏰ No reps logged yet today', r.message);
+      const sent = await sendPush(r.person.toLowerCase(), '⏰ No reps logged yet today', r.message, 'reminder');
       results.reminder.push({ person: r.person, sent });
     }
     // Mark today as reminded (even when nobody needed one) so a second

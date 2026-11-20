@@ -7,6 +7,15 @@
 // so it is hardcoded here.
 
 const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
+const SITE_URL = 'https://couples-workout-challenge2.vercel.app/';
+
+// Tapping a notification opens the app with the message in the URL, so
+// the app can show it as a banner instead of the message vanishing with
+// the notification (reported 2026-11-20). `data` carries the same
+// message for the in-page click listener (app already open).
+function notifUrl(type, title, body) {
+  return `${SITE_URL}?notif=${type}&title=${encodeURIComponent(title)}&msg=${encodeURIComponent(body)}`;
+}
 
 import { motivationPicFor } from './motivation-pics.js';
 
@@ -15,7 +24,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { opponent, title, message, picFor } = req.body || {};
+  const { opponent, title, message, picFor, notifType } = req.body || {};
   if (!opponent || !title || !message) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -30,6 +39,8 @@ export default async function handler(req, res) {
   const picId = ['martin', 'karine'].includes(picFor) ? picFor : opponent;
   const pic = motivationPicFor(picId);
 
+  const type = ['taunt', 'steal', 'crown'].includes(notifType) ? notifType : 'notify';
+
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',
     headers: {
@@ -41,6 +52,8 @@ export default async function handler(req, res) {
       include_external_user_ids: [opponent],
       headings: { en: title },
       contents: { en: message },
+      url: notifUrl(type, title, message),
+      data: { notif: type, title, msg: message },
       chrome_web_image: pic,
       big_picture: pic,
     }),

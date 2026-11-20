@@ -418,6 +418,10 @@ export default function App() {
   const [person, setPerson] = useState('Martin');
   const [syncStatus, setSyncStatus] = useState('Connecting...');
   const [notifState, setNotifState] = useState('off');
+  // Banner shown when the app opens from a tapped notification — the
+  // message that was in the notification, so it isn't lost when the
+  // notification itself is dismissed.
+  const [notifBanner, setNotifBanner] = useState(null);
 
   const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
   const [history, setHistory] = useState([]);
@@ -500,6 +504,26 @@ export default function App() {
     initOneSignal(setNotifState);
   }, []);
 
+  // Notification banner: pushes carry the message in their launch URL
+  // (?notif=&title=&msg=), and the OneSignal click listener in
+  // src/onesignal.js fires 'onesignal-notif-click' when the app is
+  // already open. Either way the message shows as a banner at the top.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('notif')) {
+      const title = params.get('title') || '';
+      const msg = params.get('msg') || '';
+      if (title || msg) setNotifBanner({ title, msg });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    const onClick = (e) => {
+      const { title, msg } = e.detail || {};
+      if (title || msg) setNotifBanner({ title, msg });
+    };
+    window.addEventListener('onesignal-notif-click', onClick);
+    return () => window.removeEventListener('onesignal-notif-click', onClick);
+  }, []);
+
   useEffect(() => {
     if (notifState === 'on') setActivePlayer(person);
   }, [person, notifState]);
@@ -524,7 +548,7 @@ export default function App() {
     const msg = winner === 'Tie'
       ? `Weekly Showdown ended in a tie, ${totals.martin}–${totals.karine}!`
       : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}! ${winner === 'Martin' ? 'Karine' : 'Martin'} owes a forfeit 😈`;
-    notifyOpponent(opponent, '🏆 Weekly Showdown result', msg);
+    notifyOpponent(opponent, '🏆 Weekly Showdown result', msg, undefined, 'crown');
   }, [history, weeklyWins]);
 
   const saveToCloud = async (newScores, newHistory, newSteals, newWeeklyWins = weeklyWins) => {
@@ -598,7 +622,7 @@ export default function App() {
     if (!msg || tauntSending) return;
     const opponent = person === 'Martin' ? 'Karine' : 'Martin';
     setTauntSending(true);
-    await notifyOpponent(opponent, `😏 ${person} taunts you!`, msg, person);
+    await notifyOpponent(opponent, `😏 ${person} taunts you!`, msg, person, 'taunt');
     setTauntInput('');
     setTauntSent(true);
     setTimeout(() => setTauntSent(false), 4000);
@@ -631,7 +655,7 @@ export default function App() {
 
     triggerHearts();
     saveToCloud(updatedScores, updatedHistory, updatedSteals);
-    notifyOpponent(opponent, `⚡ ${who} stole 50 reps!`, `${who} claimed the Rep Steal — +50 for them, -50 for you!`);
+    notifyOpponent(opponent, `⚡ ${who} stole 50 reps!`, `${who} claimed the Rep Steal — +50 for them, -50 for you! New totals: Martin ${updatedScores.Martin}, Karine ${updatedScores.Karine}.`, undefined, 'steal');
   };
 
   const undoLast = () => {
@@ -848,6 +872,15 @@ export default function App() {
 
   return (
     <div style={s.page}>
+      {notifBanner && (
+        <div style={{ marginBottom: '12px', padding: '12px 14px', background: 'rgba(251,191,36,0.1)', border: '1px solid #f59e0b', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            {notifBanner.title && <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '2px' }}>{notifBanner.title}</div>}
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{notifBanner.msg}</div>
+          </div>
+          <button onClick={() => setNotifBanner(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.1rem', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+        </div>
+      )}
       <style>{`
         * { box-sizing: border-box; }
         @keyframes pulseScore {
