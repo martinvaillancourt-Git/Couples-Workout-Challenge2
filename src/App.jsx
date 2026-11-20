@@ -29,7 +29,6 @@ const TROPHIES = [
     return Object.values(dates).some(set => set.size >= 2);
   }},
   { id: 'ten_workouts', title: 'Consistency Champ', desc: 'Completed 10 separate logging sessions', icon: '📅', check: (m, k, h) => h.length >= 10 },
-  { id: 'thief', title: 'Rep Stealer', desc: 'Successfully claimed a Wednesday or Sunday Rep Steal', icon: '🦹‍♂️', check: (m, k, h) => h.some(i => i.isSteal) },
   { id: 'streak_3', title: 'On Fire', desc: 'Reached a 3-day logging streak', icon: '🔥', check: (m, k, h, s) => (s?.Martin.best >= 3 || s?.Karine.best >= 3) },
   { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
   { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
@@ -425,7 +424,6 @@ export default function App() {
 
   const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
   const [history, setHistory] = useState([]);
-  const [steals, setSteals] = useState({});
   const [weeklyWins, setWeeklyWins] = useState([]);
 
   const [repInput, setRepInput] = useState('');
@@ -462,14 +460,12 @@ export default function App() {
           const data = snapshot.data();
           if (data.scores) setScores(data.scores);
           if (data.history) setHistory(data.history);
-          if (data.steals) setSteals(data.steals);
           if (data.weeklyWins) setWeeklyWins(data.weeklyWins);
         } else {
           try {
             await setDoc(challengeDocRef, {
               scores: { Martin: 0, Karine: 0 },
-              history: [],
-              steals: {}
+              history: []
             });
           } catch (err) {
             console.error('Initialization error:', err);
@@ -543,7 +539,7 @@ export default function App() {
     crownedRef.current[lastWeek] = true;
     const entry = { weekStart: lastWeek, winner, martin: totals.martin, karine: totals.karine, forfeit: null, forfeitPaid: false };
     const updatedWins = [...weeklyWins, entry];
-    saveToCloud(scores, history, steals, updatedWins);
+    saveToCloud(scores, history, updatedWins);
     const opponent = person === 'Martin' ? 'Karine' : 'Martin';
     const msg = winner === 'Tie'
       ? `Weekly Showdown ended in a tie, ${totals.martin}–${totals.karine}!`
@@ -551,10 +547,9 @@ export default function App() {
     notifyOpponent(opponent, '🏆 Weekly Showdown result', msg, undefined, 'crown');
   }, [history, weeklyWins]);
 
-  const saveToCloud = async (newScores, newHistory, newSteals, newWeeklyWins = weeklyWins) => {
+  const saveToCloud = async (newScores, newHistory, newWeeklyWins = weeklyWins) => {
     setScores(newScores);
     setHistory(newHistory);
-    setSteals(newSteals);
     setWeeklyWins(newWeeklyWins);
     try {
       // Merge, don't replace: setDoc without merge would wipe the
@@ -565,7 +560,6 @@ export default function App() {
       await setDoc(challengeDocRef, {
         scores: newScores,
         history: newHistory,
-        steals: newSteals,
         weeklyWins: newWeeklyWins
       }, { merge: true });
     } catch (err) {
@@ -575,22 +569,18 @@ export default function App() {
 
   const nowObj = new Date();
   const dayOfWeek = nowObj.getDay();
-  const currentHour = nowObj.getHours();
   const todayDateStr = localDateStr(nowObj);
-  const isStealWindow = (dayOfWeek === 3 || dayOfWeek === 0) && currentHour === 12;
-  const stealKey = `${todayDateStr}-${dayOfWeek === 3 ? 'Wed' : 'Sun'}`;
-  const stealClaimedBy = steals[stealKey];
 
   const triggerAnimation = (who) => {
     setAnimateScore(who);
     setTimeout(() => setAnimateScore(null), 600);
   };
 
-  // Burst push: when a player logs more than 50 real reps (steals don't
-  // count) within a rolling hour, the other player gets an automatic
-  // taunt-style push with the count. At most one per player per hour, so
-  // a big session doesn't spam. Entry ids are Date.now() timestamps, so
-  // the last hour is entries with id > now - 3600000.
+  // Burst push: when a player logs more than 50 real reps (old Rep Steal
+  // entries don't count) within a rolling hour, the other player gets an
+  // automatic taunt-style push with the count. At most one per player per
+  // hour, so a big session doesn't spam. Entry ids are Date.now()
+  // timestamps, so the last hour is entries with id > now - 3600000.
   const checkBurstPush = (who, hist) => {
     const nowMs = Date.now();
     const lastHour = hist.filter(e => e.person === who && !e.isSteal && e.id > nowMs - 3600000);
@@ -604,7 +594,7 @@ export default function App() {
     notifyOpponent(opponent, `🔥 ${who} is on fire!`, `${who} just logged ${total} reps in the last hour! Your move. 😏`, who, 'burst');
   };
 
-  const logReps = (who, count, label, isSteal = false) => {
+  const logReps = (who, count, label) => {
     const num = Number(count);
     if (!num || num <= 0) return;
 
@@ -617,7 +607,6 @@ export default function App() {
       person: who,
       reps: num,
       label: label || 'Workout Reps',
-      isSteal,
       date: localDateStr(now),
       time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hour: now.getHours()
@@ -628,7 +617,7 @@ export default function App() {
     const opponent = who === 'Martin' ? 'Karine' : 'Martin';
     if (scores[who] <= scores[opponent] && updatedScores[who] > updatedScores[opponent]) triggerHearts();
 
-    saveToCloud(updatedScores, updatedHistory, steals);
+    saveToCloud(updatedScores, updatedHistory);
     checkBurstPush(who, updatedHistory);
     setRepInput('');
   };
@@ -648,35 +637,6 @@ export default function App() {
     setTimeout(() => setTauntSending(false), 10000);
   };
 
-  const claimSteal = (who) => {
-    if (stealClaimedBy) return;
-    const updatedSteals = { ...steals, [stealKey]: who };
-    const opponent = who === 'Martin' ? 'Karine' : 'Martin';
-    const updatedScores = {
-      ...scores,
-      [who]: scores[who] + 50,
-      [opponent]: Math.max(0, scores[opponent] - 50)
-    };
-    triggerAnimation(who);
-
-    const now = new Date();
-    const entry = {
-      id: Date.now(),
-      person: who,
-      reps: 50,
-      label: '⚡ 12PM Rep Steal (+50 / -50)',
-      isSteal: true,
-      date: localDateStr(now),
-      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      hour: now.getHours()
-    };
-    const updatedHistory = [entry, ...history];
-
-    triggerHearts();
-    saveToCloud(updatedScores, updatedHistory, updatedSteals);
-    notifyOpponent(opponent, `⚡ ${who} stole 50 reps!`, `${who} claimed the Rep Steal — +50 for them, -50 for you! New totals: Martin ${updatedScores.Martin}, Karine ${updatedScores.Karine}.`, undefined, 'steal');
-  };
-
   const undoLast = () => {
     if (history.length === 0) return;
     const [last, ...rest] = history;
@@ -684,7 +644,7 @@ export default function App() {
       ...scores,
       [last.person]: Math.max(0, scores[last.person] - last.reps)
     };
-    saveToCloud(updatedScores, rest, steals);
+    saveToCloud(updatedScores, rest);
   };
 
   const martinReps = scores.Martin;
@@ -788,7 +748,7 @@ export default function App() {
   // Update one weekly result (set forfeit / mark forfeit paid) and save it
   const updateWeeklyWin = (weekStart, patch) => {
     const updated = weeklyWins.map(w => w.weekStart === weekStart ? { ...w, ...patch } : w);
-    saveToCloud(scores, history, steals, updated);
+    saveToCloud(scores, history, updated);
   };
 
   // Milestone celebration: when a new trophy is unlocked or a player ranks
@@ -809,7 +769,7 @@ export default function App() {
     if (celebrateTimerRef.current) clearTimeout(celebrateTimerRef.current);
     celebrateTimerRef.current = setTimeout(() => setCelebration(null), 5000);
   };
-  // Floating hearts burst for win moments (taking the lead, claiming a steal)
+  // Floating hearts burst for win moments (taking the lead)
   const triggerHearts = () => {
     setHeartsKey(k => k + 1);
     if (heartsTimerRef.current) clearTimeout(heartsTimerRef.current);
@@ -1003,26 +963,6 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ ...s.stealBanner, borderColor: isStealWindow ? '#f59e0b' : '#334155', background: isStealWindow ? 'rgba(245, 158, 11, 0.15)' : '#000000' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.4rem' }}>⚡</span>
-            <div>
-              <strong style={{ color: '#fbbf24', display: 'block', fontSize: '0.95rem' }}>Wed &amp; Sun 12:00 PM Rep Steal</strong>
-              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                {stealClaimedBy ? `Claimed today by ${stealClaimedBy}! 🦹‍♂️` : isStealWindow ? 'Active now! Claim 50 reps and steal!' : 'Opens Wed & Sun at 12:00 PM.'}
-              </span>
-            </div>
-          </div>
-          {!stealClaimedBy && (
-            <button
-              onClick={() => claimSteal(person)}
-              style={{ ...s.primaryBtn, background: person === 'Martin' ? '#0284c7' : '#db2777', fontSize: '0.8rem', padding: '8px 12px', marginTop: '6px' }}
-            >
-              Claim Steal as {person} (+50)
-            </button>
-          )}
-        </div>
-
         <div style={s.panel}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#94a3b8' }}>🪢 Live Tug-of-War Bar</span>
@@ -1205,7 +1145,7 @@ export default function App() {
                   {history.slice(0, 10).map(i => (
                     <div key={i.id} style={s.feedItem}>
                       <div>
-                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps {i.isSteal && <span style={{ color: '#fbbf24', fontWeight: 800 }}>⚡Steal</span>} <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>({i.label})</span>
+                        <strong style={{ color: i.person === 'Martin' ? '#38bdf8' : '#f472b6' }}>{i.person}</strong> — {i.reps} reps <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>({i.label})</span>
                       </div>
                       <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{i.time}</span>
                     </div>
@@ -1530,7 +1470,6 @@ const s = {
   scoreNum: { fontSize: '1.25rem', fontWeight: 800 },
   unit: { fontSize: '0.7rem', color: '#64748b', fontWeight: 600 },
   tauntBanner: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fde047', padding: '10px 12px', borderRadius: '12px', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 500 },
-  stealBanner: { display: 'flex', flexDirection: 'column', gap: '8px', border: '2px solid', borderRadius: '14px', padding: '12px 14px', marginBottom: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
   panel: { background: '#000000', border: '1px solid #1e293b', borderRadius: '14px', padding: '14px', marginBottom: '14px', boxShadow: '0 6px 16px rgba(0,0,0,0.4)' },
   tugOuter: { display: 'flex', height: '28px', background: '#1e293b', borderRadius: '99px', position: 'relative', overflow: 'hidden', border: '1px solid #334155' },
   tugM: { background: '#0284c7', height: '100%', display: 'flex', alignItems: 'center', paddingLeft: '10px', fontSize: '0.7rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },

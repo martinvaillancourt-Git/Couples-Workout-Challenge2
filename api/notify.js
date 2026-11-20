@@ -35,11 +35,11 @@ export default async function handler(req, res) {
   }
 
   // The picture that rides along: the sender's for a taunt (picFor),
-  // the recipient's for steal/crown pushes (default).
+  // the recipient's for crown pushes (default).
   const picId = ['martin', 'karine'].includes(picFor) ? picFor : opponent;
   const pic = motivationPicFor(picId);
 
-  const type = ['taunt', 'steal', 'crown', 'burst'].includes(notifType) ? notifType : 'notify';
+  const type = ['taunt', 'crown', 'burst'].includes(notifType) ? notifType : 'notify';
 
   const r = await fetch('https://api.onesignal.com/notifications', {
     method: 'POST',

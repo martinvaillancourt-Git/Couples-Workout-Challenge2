@@ -11,10 +11,10 @@
 //
 // How it works: each phone is identified by the "Active Logger" selected in
 // the app (Martin or Karine). Pushes go to the other person's external user
-// id when a Rep Steal is claimed or a Weekly Showdown is crowned (and a
-// daily 6 PM reminder, sent by api/reminder.js, if someone hasn't logged
-// yet). Keep your own name selected as the Active Logger on your own phone
-// so pushes go to the right person.
+// id when a Weekly Showdown is crowned (and a daily 6 PM reminder, sent by
+// api/motivation.js, if someone hasn't logged yet). Keep your own name
+// selected as the Active Logger on your own phone so pushes go to the right
+// person.
 
 export const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 
@@ -100,7 +100,7 @@ export function setActivePlayer(person) {
 // (/api/notify.js), which holds the OneSignal REST API key server-side.
 // picFor (optional) picks whose motivation picture rides along — the
 // sender's for taunts, the recipient's otherwise. type ('taunt' /
-// 'steal' / 'crown') tells the app what the notification was, so tapping
+// 'crown' / 'burst') tells the app what the notification was, so tapping
 // it can show the message as a banner.
 export async function notifyOpponent(opponent, title, message, picFor, type) {
   if (!isOneSignalConfigured()) return;
