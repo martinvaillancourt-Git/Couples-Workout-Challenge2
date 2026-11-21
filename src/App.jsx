@@ -550,10 +550,10 @@ export default function App() {
   // every time. A mood with no clips falls back to the wave.
   const WELCOME_CLIPS = {
     Martin: {
-      wave: ['/welcome/alley-177-anim.mp4', '/welcome/alley-181-anim.mp4', '/welcome/alley-182-anim.mp4', '/welcome/alley-186-anim.mp4'],
-      sad: [],
-      urgent: ['/welcome/alley-orig-urgent.mp4'],
-      clap: ['/welcome/alley-orig-clap.mp4']
+      wave: ['/welcome/alley-snake-wave.mp4', '/welcome/alley-177-anim.mp4', '/welcome/alley-181-anim.mp4', '/welcome/alley-182-anim.mp4', '/welcome/alley-186-anim.mp4'],
+      sad: ['/welcome/alley-snake-sad.mp4'],
+      urgent: ['/welcome/alley-snake-urgent.mp4'],
+      clap: ['/welcome/alley-snake-clap.mp4']
     },
     Karine: {
       wave: ['/welcome/johnny-welcome.mp4'],
