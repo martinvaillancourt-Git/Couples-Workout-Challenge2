@@ -17,7 +17,7 @@ function notifUrl(type, title, body) {
   return `${SITE_URL}?notif=${type}&title=${encodeURIComponent(title)}&msg=${encodeURIComponent(body)}`;
 }
 
-import { motivationPicFor } from './motivation-pics.js';
+import { motivationPicFor, pushIconFor as ICON_FOR } from './motivation-pics.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
   // The picture that rides along: the sender's for a taunt (picFor),
   // the recipient's for crown pushes (default).
-  const picId = ['martin', 'karine'].includes(picFor) ? picFor : opponent;
+  const picId = opponent; // always the recipient's side (Martin → Alley, Karine → Martin)
   const pic = motivationPicFor(picId);
 
   const type = ['taunt', 'crown', 'burst'].includes(notifType) ? notifType : 'notify';
@@ -56,6 +56,8 @@ export default async function handler(req, res) {
       data: { notif: type, title, msg: message },
       chrome_web_image: pic,
       big_picture: pic,
+      chrome_web_icon: ICON_FOR(picId),
+      large_icon: ICON_FOR(picId),
     }),
   });
 

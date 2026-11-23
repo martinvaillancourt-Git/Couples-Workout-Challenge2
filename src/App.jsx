@@ -412,6 +412,14 @@ function getMondayStr(ds) {
   return addDaysStr(ds, -idx);
 }
 
+// One-line weekly score summary for push notifications, so every push
+// carries the real numbers (Martin asked 2026-11-23).
+function weekLine(history) {
+  const t = computeWeekTotals(history, getMondayStr(localDateStr(new Date())));
+  const lead = t.martin === t.karine ? 'Tied' : (t.martin > t.karine ? `Martin leads by ${t.martin - t.karine}` : `Karine leads by ${t.karine - t.martin}`);
+  return `This week: Martin ${t.martin} – Karine ${t.karine} (${lead}).`;
+}
+
 function computeWeekTotals(history, weekStart) {
   const weekEnd = addDaysStr(weekStart, 6);
   let martin = 0, karine = 0;
@@ -662,7 +670,7 @@ export default function App() {
     const opponent = person === 'Martin' ? 'Karine' : 'Martin';
     const msg = winner === 'Tie'
       ? `Weekly Showdown ended in a tie, ${totals.martin}–${totals.karine}!`
-      : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}! ${winner === 'Martin' ? 'Karine' : 'Martin'} owes a forfeit 😈`;
+      : `${winner} won the Weekly Showdown, ${totals.martin}–${totals.karine}! ${winner === 'Martin' ? 'Karine' : 'Martin'} owes a forfeit 😈 New week starts now, 0–0.`;
     notifyOpponent(opponent, '🏆 Weekly Showdown result', msg, undefined, 'crown');
   }, [history, weeklyWins]);
 
@@ -710,7 +718,7 @@ export default function App() {
     if (nowMs - lastSent < 3600000) return;
     localStorage.setItem(key, String(nowMs));
     const opponent = who === 'Martin' ? 'Karine' : 'Martin';
-    notifyOpponent(opponent, `🔥 ${who} is on fire!`, `${who} just logged ${total} reps in the last hour! Your move. 😏`, who, 'burst');
+    notifyOpponent(opponent, `🔥 ${who} is on fire!`, `${who} just logged ${total} reps in the last hour! ${weekLine(hist)} Your move. 😏`, undefined, 'burst');
   };
 
   const logReps = (who, count, label) => {
@@ -745,14 +753,14 @@ export default function App() {
   };
 
   // Manual taunt: sends a push to the other player with a personal
-  // message, carrying the sender's picture (Alley for Martin, Martin's picture
-  // for Karine). 10s cooldown after sending to stop double-taps.
+  // message plus this week's scores; the picture is the recipient's side
+  // (Alley for Martin, Martin for Karine). 10s cooldown after sending to stop double-taps.
   const sendTaunt = async () => {
     const msg = tauntInput.trim();
     if (!msg || tauntSending) return;
     const opponent = person === 'Martin' ? 'Karine' : 'Martin';
     setTauntSending(true);
-    await notifyOpponent(opponent, `😏 ${person} taunts you!`, msg, person, 'taunt');
+    await notifyOpponent(opponent, `😏 ${person} taunts you!`, `“${msg}” ${weekLine(history)}`, undefined, 'taunt');
     setTauntInput('');
     setTauntSent(true);
     setTimeout(() => setTauntSent(false), 4000);

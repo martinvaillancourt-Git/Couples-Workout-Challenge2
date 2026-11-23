@@ -172,3 +172,9 @@ export function motivationPicFor(externalId) {
   const pics = externalId === 'karine' ? MARTIN_PICS : ALLEY_PICS;
   return SITE_URL + pics[Math.floor(Math.random() * pics.length)];
 }
+
+// Small round icon shown on the collapsed notification: the face of the
+// recipient's side (Alley for Martin, Martin for Karine).
+export function pushIconFor(id) {
+  return `${SITE_URL}/push-icons/${String(id).toLowerCase() === 'karine' ? 'martin' : 'alley'}.png`;
+}

@@ -39,7 +39,7 @@ const DOC_PATH = 'challenges/martin_karine_arena';
 const ONESIGNAL_APP_ID = '59358996-6bd7-4ac5-b9b3-4edf22d8f85e';
 const SITE_URL = 'https://couples-workout-challenge2.vercel.app/';
 
-import { motivationPicFor } from './motivation-pics.js';
+import { motivationPicFor, pushIconFor as ICON_FOR } from './motivation-pics.js';
 
 const docUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${DOC_PATH}`;
 
@@ -124,6 +124,8 @@ async function sendPush(externalId, title, body, type) {
       data: { notif: type, title, msg: body },
       chrome_web_image: pic,
       big_picture: pic,
+      chrome_web_icon: ICON_FOR(externalId),
+      large_icon: ICON_FOR(externalId),
     }),
   });
   return r.ok;
