@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 // Forfeit wheel: spins over the winner's secret library and lands on one
 // item at random. Slices show numbers only, so the list stays secret even
