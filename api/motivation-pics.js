@@ -1,8 +1,8 @@
 // Shared by api/notify.js and api/reminder.js: a random motivation picture
 // per player, to show in push notifications. Alley pictures for Martin,
-// Johnny Depp pictures for Karine. Full URLs so OneSignal / the phone can
+// Martin's pictures for Karine. Full URLs so OneSignal / the phone can
 // fetch the image. Keep these lists in sync with public/alley-pics and
-// public/johnny-pics when pictures are added or removed.
+// public/martin-pics when pictures are added or removed.
 const SITE_URL = 'https://couples-workout-challenge2.vercel.app';
 
 const ALLEY_PICS = [
@@ -156,22 +156,19 @@ const ALLEY_PICS = [
   '/alley-pics/alley-176.webp',
 ];
 
-const JOHNNY_PICS = [
-  '/johnny-pics/johnny-02.webp',
-  '/johnny-pics/johnny-03.webp',
-  '/johnny-pics/johnny-04.webp',
-  '/johnny-pics/johnny-05.webp',
-  '/johnny-pics/johnny-06.webp',
-  '/johnny-pics/johnny-07.webp',
-  '/johnny-pics/johnny-08.webp',
-  '/johnny-pics/johnny-09.webp',
-  '/johnny-pics/johnny-10.webp',
-  '/johnny-pics/johnny-11.webp',
-  '/johnny-pics/johnny-12.webp',
+const MARTIN_PICS = [
+  '/martin-pics/martin-01.webp',
+  '/martin-pics/martin-02.webp',
+  '/martin-pics/martin-03.webp',
+  '/martin-pics/martin-04.webp',
+  '/martin-pics/martin-05.webp',
+  '/martin-pics/martin-06.webp',
+  '/martin-pics/martin-07.webp',
+  '/martin-pics/martin-08.webp',
 ];
 
 // externalId is the OneSignal external user id: 'martin' or 'karine'.
 export function motivationPicFor(externalId) {
-  const pics = externalId === 'karine' ? JOHNNY_PICS : ALLEY_PICS;
+  const pics = externalId === 'karine' ? MARTIN_PICS : ALLEY_PICS;
   return SITE_URL + pics[Math.floor(Math.random() * pics.length)];
 }

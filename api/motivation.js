@@ -64,7 +64,7 @@ const KARINE_MOTIVATION_LINES = [
   'Fifty reps a day keeps the couch away. Go!',
   "Your streak is alive. Don't let it die today.",
   "Every rep you log is a rep Martin didn't.",
-  'Johnny would want you to win this week. Go earn it.',
+  "Martin's watching. Show him who's boss this week.",
   'No excuses — ten minutes is a full set. Go earn it.',
   "You're one good session from taking the lead. Take it.",
   'Remember the forfeit. Somebody owes somebody. Make it him.',

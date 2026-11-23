@@ -106,14 +106,14 @@ const MOTIVATION_LINES = [
   "The week won't win itself. Log something.",
 ];
 
-// Johnny Depp motivational lines for the full-screen pop-up (Karine only)
+// Motivational lines for Karine's full-screen pop-up (Martin's pictures)
 const KARINE_MOTIVATION_LINES = [
   "You've got this, Karine. One more set and you're ahead of Martin.",
   "Martin isn't going to beat himself. Get moving.",
   'Fifty reps a day keeps the couch away. Go!',
   "Your streak is alive. Don't let it die today.",
   "Every rep you log is a rep Martin didn't.",
-  'Johnny would want you to win this week. Go earn it.',
+  "Martin's watching. Show him who's boss this week.",
   'No excuses — ten minutes is a full set. Go earn it.',
   "You're one good session from taking the lead. Take it.",
   'Remember the forfeit. Somebody owes somebody. Make it him.',
@@ -288,19 +288,16 @@ const ALLEY_PICS = [
   '/alley-pics/alley-190.webp',
 ];
 
-// Johnny Depp pictures for the motivation pop-up (Karine only)
-const JOHNNY_PICS = [
-  '/johnny-pics/johnny-02.webp',
-  '/johnny-pics/johnny-03.webp',
-  '/johnny-pics/johnny-04.webp',
-  '/johnny-pics/johnny-05.webp',
-  '/johnny-pics/johnny-06.webp',
-  '/johnny-pics/johnny-07.webp',
-  '/johnny-pics/johnny-08.webp',
-  '/johnny-pics/johnny-09.webp',
-  '/johnny-pics/johnny-10.webp',
-  '/johnny-pics/johnny-11.webp',
-  '/johnny-pics/johnny-12.webp',
+// Martin's pictures for Karine's motivation pop-up (Karine asked for Martin instead of Johnny Depp, 2026-11-23)
+const MARTIN_PICS = [
+  '/martin-pics/martin-01.webp',
+  '/martin-pics/martin-02.webp',
+  '/martin-pics/martin-03.webp',
+  '/martin-pics/martin-04.webp',
+  '/martin-pics/martin-05.webp',
+  '/martin-pics/martin-06.webp',
+  '/martin-pics/martin-07.webp',
+  '/martin-pics/martin-08.webp',
 ];
 
 function getRank(reps) {
@@ -565,7 +562,7 @@ export default function App() {
   }, [person, notifState]);
 
   // Welcome splash: the Active Logger's character (Alley for Martin,
-  // Johnny Depp for Karine) appears full screen when the app opens, with
+  // Martin for Karine) appears full screen when the app opens, with
   // an expression that matches the reps. Twice a day at most — first open
   // of the day, and first open after 6 PM. The mood waits for the cloud
   // data: before sync, scores are 0/0 and everyone would look "at zero".
@@ -582,10 +579,10 @@ export default function App() {
       clap: ['/welcome/alley-snake-clap.mp4']
     },
     Karine: {
-      wave: ['/welcome/johnny-welcome.mp4'],
-      sad: ['/welcome/johnny-sad.mp4', '/welcome/johnny-sad2.mp4'],
-      urgent: [],
-      clap: ['/welcome/johnny-clap.mp4']
+      wave: ['/welcome/martin-wave.mp4'],
+      sad: ['/welcome/martin-sad.mp4'],
+      urgent: ['/welcome/martin-urgent.mp4'],
+      clap: ['/welcome/martin-clap.mp4']
     }
   };
   const WELCOME_LINES = {
@@ -743,7 +740,7 @@ export default function App() {
   };
 
   // Manual taunt: sends a push to the other player with a personal
-  // message, carrying the sender's picture (Alley for Martin, Johnny
+  // message, carrying the sender's picture (Alley for Martin, Martin's picture
   // for Karine). 10s cooldown after sending to stop double-taps.
   const sendTaunt = async () => {
     const msg = tauntInput.trim();
@@ -900,9 +897,9 @@ export default function App() {
   const prevRanksRef = useRef(null);
   const celebrateTimerRef = useRef(null);
   const heartsTimerRef = useRef(null);
-  // Random picture for a celebration: Alley for Martin, Johnny Depp for Karine
+  // Random picture for a celebration: Alley for Martin, Martin for Karine
   const celebrationPic = (who) => {
-    const pics = who === 'Martin' ? ALLEY_PICS : JOHNNY_PICS;
+    const pics = who === 'Martin' ? ALLEY_PICS : MARTIN_PICS;
     return pics[Math.floor(Math.random() * pics.length)];
   };
   const showCelebration = (c) => {
@@ -932,14 +929,14 @@ export default function App() {
   // (their total is less than half of the opponent's).
   const isBehindByHalf = (mine, theirs) => theirs > 0 && mine < theirs / 2;
 
-  // Alley pops up for Martin; Johnny Depp pops up for Karine
+  // Alley pops up for Martin; Martin pops up for Karine
   const showMotivation = () => {
     setMotivation(MOTIVATION_LINES[Math.floor(Math.random() * MOTIVATION_LINES.length)]);
     setMotivationPic(ALLEY_PICS[Math.floor(Math.random() * ALLEY_PICS.length)]);
   };
   const showKarineMotivation = () => {
     setMotivation(KARINE_MOTIVATION_LINES[Math.floor(Math.random() * KARINE_MOTIVATION_LINES.length)]);
-    setMotivationPic(JOHNNY_PICS[Math.floor(Math.random() * JOHNNY_PICS.length)]);
+    setMotivationPic(MARTIN_PICS[Math.floor(Math.random() * MARTIN_PICS.length)]);
   };
 
   // Motivation pop-up: checked at noon and at 6 PM (local time). When the

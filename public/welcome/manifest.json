@@ -1,15 +1,16 @@
 {
   "Karine": {
-    "clap": [
-      "/welcome/johnny-clap.mp4"
+    "wave": [
+      "/welcome/martin-wave.mp4"
     ],
     "sad": [
-      "/welcome/johnny-sad.mp4",
-      "/welcome/johnny-sad2.mp4"
+      "/welcome/martin-sad.mp4"
     ],
-    "urgent": [],
-    "wave": [
-      "/welcome/johnny-welcome.mp4"
+    "urgent": [
+      "/welcome/martin-urgent.mp4"
+    ],
+    "clap": [
+      "/welcome/martin-clap.mp4"
     ]
   },
   "Martin": {
