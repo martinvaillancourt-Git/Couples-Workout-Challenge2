@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import Metrics from './Metrics';
 import ForfeitVault from './ForfeitVault.jsx';
+import SpinWheel from './SpinWheel.jsx';
 import { initOneSignal, enableNotifications, setActivePlayer, notifyOpponent, isOneSignalConfigured } from './onesignal.js';
 
 // ⬇️ MAKE SURE YOUR CONFIG VALUES ARE HERE ⬇️
@@ -81,15 +82,6 @@ const TROPHIES = [
   { id: 'forfeit_paid', title: 'Debt Settled', desc: 'Paid off a weekly forfeit', icon: '💸', check: (m, k, h, s, w) => (w || []).some(x => x.forfeitPaid) },
 ];
 
-// Forfeit ideas for the weekly loser (winner can also type a custom one)
-const FORFEIT_OPTIONS = [
-  'Winner picks dinner',
-  'Loser cooks dinner',
-  'Loser does the dishes for a week',
-  '10-minute massage for the winner',
-  'Winner picks the movie night',
-  'Loser does a chore of the winner’s choice',
-];
 
 // Alley's motivational lines for the full-screen pop-up (Martin only)
 const MOTIVATION_LINES = [
@@ -474,8 +466,6 @@ export default function App() {
   const [tauntInput, setTauntInput] = useState('');
   const [tauntSending, setTauntSending] = useState(false);
   const [tauntSent, setTauntSent] = useState(false);
-  const [forfeitPick, setForfeitPick] = useState(FORFEIT_OPTIONS[0]);
-  const [forfeitCustom, setForfeitCustom] = useState('');
   const [dailyTaunt, setDailyTaunt] = useState('');
   const [animateScore, setAnimateScore] = useState(null);
 
@@ -1190,34 +1180,18 @@ export default function App() {
               <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f472b6', marginBottom: '6px' }}>💸 Forfeit — week of {fmtShortDate(latestWin.weekStart)}</div>
               {!latestWin.forfeit ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <select value={forfeitPick} onChange={e => setForfeitPick(e.target.value)} style={s.input}>
-                    {person === latestWin.winner && vaultUnlockedFor === person && vaultItems.length > 0 && (
-                      <optgroup label="🔒 My secret library">
-                        {vaultItems.map(i => <option key={i.id} value={i.text}>{i.text}</option>)}
-                      </optgroup>
-                    )}
-                    <optgroup label="Classics">
-                      {FORFEIT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </optgroup>
-                    <option value="__custom">Custom…</option>
-                  </select>
-                  {person === latestWin.winner && vaultUnlockedFor !== person && (
-                    <button onClick={() => setTab('vault')} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', textAlign: 'left', padding: 0 }}>🔒 Unlock your secret library to pick from it</button>
+                  {person !== latestWin.winner ? (
+                    <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>😈 Waiting for {latestWin.winner} to spin the forfeit wheel…</div>
+                  ) : vaultUnlockedFor !== person ? (
+                    <button onClick={() => setTab('vault')} style={{ ...s.primaryBtn, background: '#db2777', fontSize: '0.85rem', padding: '8px 12px' }}>🔒 Unlock your secret library to spin the wheel</button>
+                  ) : vaultItems.length === 0 ? (
+                    <button onClick={() => setTab('vault')} style={{ ...s.primaryBtn, background: '#db2777', fontSize: '0.85rem', padding: '8px 12px' }}>Add forfeits to your secret library first</button>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Spin to pick {latestWin.winner === 'Martin' ? "Karine's" : "Martin's"} forfeit from your secret library. One spin, no do-overs.</div>
+                      <SpinWheel items={vaultItems} onResult={(f) => updateWeeklyWin(latestWin.weekStart, { forfeit: f })} />
+                    </>
                   )}
-                  {forfeitPick === '__custom' && (
-                    <input type="text" placeholder="Type the forfeit…" value={forfeitCustom} onChange={e => setForfeitCustom(e.target.value)} style={s.input} />
-                  )}
-                  <button
-                    onClick={() => {
-                      const f = forfeitPick === '__custom' ? forfeitCustom.trim() : forfeitPick;
-                      if (!f) return;
-                      updateWeeklyWin(latestWin.weekStart, { forfeit: f });
-                      setForfeitCustom('');
-                    }}
-                    style={{ ...s.primaryBtn, background: '#db2777', fontSize: '0.85rem', padding: '8px 12px' }}
-                  >
-                    Set forfeit for {latestWin.winner === 'Martin' ? 'Karine' : 'Martin'}
-                  </button>
                 </div>
               ) : !latestWin.forfeitPaid ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
