@@ -89,12 +89,14 @@ function torontoParts() {
 const isBehindByHalf = (mine, theirs) => theirs > 0 && mine < theirs / 2;
 
 // Consecutive days logged ending yesterday (a streak still alive today)
-function streakEndingYesterday(dateSet, todayStr) {
+function streakEndingYesterday(dateSet, todayStr, restSet = new Set()) {
   let n = 0;
   const d = new Date(todayStr + 'T12:00:00');
   d.setDate(d.getDate() - 1);
-  while (dateSet.has(d.toISOString().split('T')[0])) {
-    n++;
+  for (;;) {
+    const ds = d.toISOString().split('T')[0];
+    if (dateSet.has(ds)) n++;
+    else if (!restSet.has(ds)) break;
     d.setDate(d.getDate() - 1);
   }
   return n;
@@ -156,12 +158,17 @@ export default async function handler(req, res) {
     Karine: Number(scores.Karine?.integerValue || 0),
   };
   const lastPush = fields.lastMotivationPush?.mapValue?.fields || {};
+  // Rest days: no motivation or reminder push for a player resting today.
+  const restFields = fields.restDays?.mapValue?.fields || {};
+  const restFor = p => new Set((restFields[p]?.arrayValue?.values || []).map(v => v.stringValue));
+  const restingToday = { Martin: restFor('Martin').has(today), Karine: restFor('Karine').has(today) };
   const marker = `${today}-${slot || 'dry'}`;
 
   const behind = ['Martin', 'Karine'].filter(p => {
     const mine = totals[p];
     const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
     if (!isBehindByHalf(mine, theirs)) return false;
+    if (restingToday[p]) return false;
     if (!dryRun && lastPush[p]?.stringValue === marker) return false;
     return true;
   });
@@ -198,10 +205,10 @@ export default async function handler(req, res) {
   const alreadyReminded = !dryRun && lastReminder === today;
   const wouldSendReminder = doReminder && !alreadyReminded
     ? ['Martin', 'Karine']
-        .filter(p => !loggedToday[p])
+        .filter(p => !loggedToday[p] && !restingToday[p])
         .map(p => {
           const dates = new Set(entries.filter(e => e.person === p).map(e => e.date));
-          const streak = streakEndingYesterday(dates, today);
+          const streak = streakEndingYesterday(dates, today, restFor(p));
           const mine = totals[p];
           const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
           const opp = p === 'Martin' ? 'Karine' : 'Martin';

@@ -34,12 +34,18 @@ const TROPHIES = [
   { id: 'streak_7', title: 'Week Warrior', desc: 'Reached a 7-day logging streak', icon: '🌋', check: (m, k, h, s) => (s?.Martin.best >= 7 || s?.Karine.best >= 7) },
   { id: 'streak_30', title: 'Unstoppable', desc: 'Reached a 30-day logging streak', icon: '💎', check: (m, k, h, s) => (s?.Martin.best >= 30 || s?.Karine.best >= 30) },
   { id: 'weekly_champ', title: 'Weekly Champion', desc: 'Won a Weekly Showdown', icon: '🏆', check: (m, k, h, s, w) => (w || []).some(x => x.winner === 'Martin' || x.winner === 'Karine') },
-  { id: 'perfect_week', title: 'Perfect Week', desc: 'Logged reps every day Monday to Sunday in a week', icon: '🌟', check: (m, k, h) => {
+  { id: 'perfect_week', title: 'Perfect Week', desc: 'Logged reps (or rested) every day Monday to Sunday in a week', icon: '🌟', check: (m, k, h, s) => {
     const daysByPerson = {};
     h.forEach(i => {
       daysByPerson[i.person] = daysByPerson[i.person] || new Set();
       daysByPerson[i.person].add(i.date);
     });
+    for (const who of ['Martin', 'Karine']) {
+      (s?.[who]?.restDates || []).forEach(ds => {
+        daysByPerson[who] = daysByPerson[who] || new Set();
+        daysByPerson[who].add(ds);
+      });
+    }
     return Object.values(daysByPerson).some(days => {
       const weeks = {};
       days.forEach(ds => {
@@ -330,10 +336,14 @@ function dateStrNDaysAgo(n) {
 // missed day is forgiven automatically if that week's freeze is still
 // unused — so one slip doesn't kill the streak. All of this is computed
 // from the history log, no extra stored state.
-function computeStreaks(history) {
+// Rest days (up to 2 per week, picked by each player) bridge a streak:
+// they don't add to the count, but they don't break it either.
+const MAX_REST_DAYS_PER_WEEK = 2;
+function computeStreaks(history, restDays = {}) {
   const result = {};
   for (const who of ['Martin', 'Karine']) {
     const days = new Set(history.filter(h => h.person === who).map(h => h.date));
+    const rest = new Set(restDays[who] || []);
     const todayStr = dateStrNDaysAgo(0);
     const currentWeek = getMondayStr(todayStr);
 
@@ -352,6 +362,10 @@ function computeStreaks(history) {
           d.setDate(d.getDate() - 1);
           continue;
         }
+        if (rest.has(ds)) {
+          d.setDate(d.getDate() - 1);
+          continue;
+        }
         if (allowFreeze) {
           const wk = getMondayStr(ds);
           if (!usedWeeks.has(wk)) {
@@ -366,7 +380,7 @@ function computeStreaks(history) {
       return { count, freezeUsed, usedWeeks };
     };
 
-    const startDs = days.has(todayStr) ? todayStr : addDaysStr(todayStr, -1);
+    const startDs = (days.has(todayStr) || rest.has(todayStr)) ? todayStr : addDaysStr(todayStr, -1);
     const cur = walkBack(startDs, true);
     const bestWithFreeze = Math.max(0, ...[...days].map(ds => walkBack(ds, true).count));
     const bestWithoutFreeze = Math.max(0, ...[...days].map(ds => walkBack(ds, false).count));
@@ -375,6 +389,9 @@ function computeStreaks(history) {
       current: cur.count,
       best: bestWithFreeze,
       loggedToday: days.has(todayStr),
+      restingToday: rest.has(todayStr) && !days.has(todayStr),
+      restDates: [...rest],
+      restUsedThisWeek: [...rest].filter(ds => getMondayStr(ds) === currentWeek).length,
       freezeUsed: cur.freezeUsed,
       freezeSaved: bestWithFreeze > bestWithoutFreeze,
       freezeAvailableThisWeek: !cur.usedWeeks.has(currentWeek),
@@ -445,6 +462,7 @@ export default function App() {
   const [scores, setScores] = useState({ Martin: 0, Karine: 0 });
   const [history, setHistory] = useState([]);
   const [weeklyWins, setWeeklyWins] = useState([]);
+  const [restDays, setRestDays] = useState({ Martin: [], Karine: [] });
 
   const [repInput, setRepInput] = useState('');
   const [tauntInput, setTauntInput] = useState('');
@@ -482,6 +500,7 @@ export default function App() {
           if (data.scores) setScores(data.scores);
           if (data.history) setHistory(data.history);
           if (data.weeklyWins) setWeeklyWins(data.weeklyWins);
+          if (data.restDays) setRestDays({ Martin: data.restDays.Martin || [], Karine: data.restDays.Karine || [] });
         } else {
           try {
             await setDoc(challengeDocRef, {
@@ -613,7 +632,8 @@ export default function App() {
       .filter(h => h.date === today && h.person === person)
       .reduce((a, h) => a + (h.reps || 0), 0);
     let mood = 'wave';
-    if (todayReps === 0 && now.getHours() >= 15) mood = 'sad';
+    const resting = (restDays[person] || []).includes(today);
+    if (todayReps === 0 && now.getHours() >= 15 && !resting) mood = 'sad';
     else if (mine < theirs) mood = 'urgent';
     else if (mine > theirs) mood = 'clap';
     const clips = (clipPool[person] || clipPool.Martin)[mood] || [];
@@ -754,7 +774,28 @@ export default function App() {
 
   const martinRank = getRank(martinReps);
   const karineRank = getRank(karineReps);
-  const streaks = computeStreaks(history);
+  const streaks = computeStreaks(history, restDays);
+
+  // Toggle today as a rest day for the active player (max 2 per Mon–Sun week).
+  const toggleRestToday = async () => {
+    const today = localDateStr(new Date());
+    const mine = restDays[person] || [];
+    let next;
+    if (mine.includes(today)) {
+      next = mine.filter(ds => ds !== today);
+    } else {
+      const wk = getMondayStr(today);
+      if (mine.filter(ds => getMondayStr(ds) === wk).length >= MAX_REST_DAYS_PER_WEEK) return;
+      next = [...mine, today];
+    }
+    const updated = { ...restDays, [person]: next };
+    setRestDays(updated);
+    try {
+      await setDoc(challengeDocRef, { restDays: updated }, { merge: true });
+    } catch (err) {
+      console.error('Failed to save rest day:', err);
+    }
+  };
   const unlockedTrophies = TROPHIES.filter(t => t.check(martinReps, karineReps, history, streaks, weeklyWins));
 
   // Weekly Showdown (Monday–Sunday)
@@ -786,10 +827,10 @@ export default function App() {
     Martin: todayLogs.filter(l => l.person === 'Martin').reduce((a, b) => a + b.reps, 0),
     Karine: todayLogs.filter(l => l.person === 'Karine').reduce((a, b) => a + b.reps, 0),
   };
-  const weekDaysLogged = {
-    Martin: new Set(history.filter(h => h.person === 'Martin' && h.date >= thisWeekStart && h.date <= thisWeekEnd).map(h => h.date)).size,
-    Karine: new Set(history.filter(h => h.person === 'Karine' && h.date >= thisWeekStart && h.date <= thisWeekEnd).map(h => h.date)).size,
-  };
+  const weekDaysLogged = Object.fromEntries(['Martin', 'Karine'].map(who => [who, new Set([
+    ...history.filter(h => h.person === who).map(h => h.date),
+    ...(restDays[who] || []),
+  ].filter(ds => ds >= thisWeekStart && ds <= thisWeekEnd)).size]));
   // Who first reached `target` reps in the given entries (chronological)
   const firstToReach = (entries, target) => {
     const totals = { Martin: 0, Karine: 0 };
@@ -1056,7 +1097,8 @@ export default function App() {
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Martin.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Martin.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Martin.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Martin.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Martin.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
-                {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Martin.current > 0 && !streaks.Martin.loggedToday && !streaks.Martin.restingToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Martin.restingToday && <span style={{ color: '#a78bfa' }}> · 😴 rest day</span>}
                 {streaks.Martin.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
                 {streaks.Martin.current > 0 && <span style={{ color: '#7dd3fc' }}> · {streaks.Martin.freezeAvailableThisWeek ? '❄️ Freeze ready' : '❄️ Freeze used'}</span>}
               </div>
@@ -1070,7 +1112,8 @@ export default function App() {
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Karine.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Karine.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Karine.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Karine.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Karine.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
-                {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Karine.current > 0 && !streaks.Karine.loggedToday && !streaks.Karine.restingToday && <span style={{ color: '#fbbf24' }}> · log today to keep it alive!</span>}
+                {streaks.Karine.restingToday && <span style={{ color: '#a78bfa' }}> · 😴 rest day</span>}
                 {streaks.Karine.loggedToday && <span style={{ color: '#4ade80' }}> · ✓ today</span>}
                 {streaks.Karine.current > 0 && <span style={{ color: '#7dd3fc' }}> · {streaks.Karine.freezeAvailableThisWeek ? '❄️ Freeze ready' : '❄️ Freeze used'}</span>}
               </div>
@@ -1225,6 +1268,25 @@ export default function App() {
                 <button onClick={() => logReps(person, 50, 'Beast Set')} style={s.quickBtn}>🦍 +50 Reps</button>
                 <button onClick={() => logReps(person, 100, 'Century Set')} style={s.quickBtn}>👑 +100 Reps</button>
               </div>
+
+              {(() => {
+                const st = streaks[person];
+                const used = st.restUsedThisWeek;
+                const isRest = (restDays[person] || []).includes(todayDateStr);
+                const full = !isRest && used >= MAX_REST_DAYS_PER_WEEK;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '14px', padding: '8px 10px', border: '1px solid #1e293b', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#a78bfa', fontWeight: 700 }}>😴 Rest days: {used} of {MAX_REST_DAYS_PER_WEEK} this week</span>
+                    <button
+                      onClick={toggleRestToday}
+                      disabled={full || (!isRest && st.loggedToday)}
+                      style={{ ...s.smallBtn, color: isRest ? '#f8fafc' : '#a78bfa', borderColor: '#a78bfa', background: isRest ? '#6d28d9' : '#1e293b', opacity: (full || (!isRest && st.loggedToday)) ? 0.4 : 1 }}
+                    >
+                      {isRest ? 'Resting today ✓ (undo)' : st.loggedToday ? 'Already logged today' : full ? 'No rest days left' : 'Rest today'}
+                    </button>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                 <input
