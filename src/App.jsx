@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import ForfeitVault from './ForfeitVault.jsx';
 import { initOneSignal, enableNotifications, setActivePlayer, notifyOpponent, isOneSignalConfigured } from './onesignal.js';
 
 // ⬇️ MAKE SURE YOUR CONFIG VALUES ARE HERE ⬇️
@@ -414,12 +415,18 @@ function fmtShortDate(ds) {
 
 export default function App() {
   const [tab, setTab] = useState('arena');
+  const [goalsView, setGoalsView] = useState('challenges');
+  // Secret forfeit library: unlocked per session for one player only
+  const [vaultUnlockedFor, setVaultUnlockedFor] = useState(null);
+  const [vaultItems, setVaultItems] = useState([]);
   // Active Logger — remembered on each phone, so Karine's phone opens
   // as Karine and Martin's as Martin (and the welcome character matches).
   const [person, setPerson] = useState(() => {
     try { return localStorage.getItem('activeLogger') || 'Martin'; } catch { return 'Martin'; }
   });
   const setActiveLogger = (p) => {
+    // Switching player always re-locks the secret forfeit library
+    if (p !== person) { setVaultUnlockedFor(null); setVaultItems([]); }
     try { localStorage.setItem('activeLogger', p); } catch {}
     setPerson(p);
   };
@@ -1124,9 +1131,19 @@ export default function App() {
               {!latestWin.forfeit ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <select value={forfeitPick} onChange={e => setForfeitPick(e.target.value)} style={s.input}>
-                    {FORFEIT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    {person === latestWin.winner && vaultUnlockedFor === person && vaultItems.length > 0 && (
+                      <optgroup label="🔒 My secret library">
+                        {vaultItems.map(i => <option key={i.id} value={i.text}>{i.text}</option>)}
+                      </optgroup>
+                    )}
+                    <optgroup label="Classics">
+                      {FORFEIT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </optgroup>
                     <option value="__custom">Custom…</option>
                   </select>
+                  {person === latestWin.winner && vaultUnlockedFor !== person && (
+                    <button onClick={() => setTab('vault')} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', textAlign: 'left', padding: 0 }}>🔒 Unlock your secret library to pick from it</button>
+                  )}
                   {forfeitPick === '__custom' && (
                     <input type="text" placeholder="Type the forfeit…" value={forfeitCustom} onChange={e => setForfeitCustom(e.target.value)} style={s.input} />
                   )}
@@ -1184,8 +1201,8 @@ export default function App() {
           <div style={{ display: 'flex', gap: '6px', width: '100%', justifyContent: 'space-between' }}>
             <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8', flex: 1 }}>💪 Logger</button>
             <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🗓️ Calendar</button>
-            <button onClick={() => setTab('trophies')} style={{ ...s.navBtn, background: tab === 'trophies' ? '#1e293b' : 'transparent', color: tab === 'trophies' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🏆 Trophies</button>
-            <button onClick={() => setTab('challenges')} style={{ ...s.navBtn, background: tab === 'challenges' ? '#1e293b' : 'transparent', color: tab === 'challenges' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🎯 Challenges</button>
+            <button onClick={() => setTab('goals')} style={{ ...s.navBtn, background: tab === 'goals' ? '#1e293b' : 'transparent', color: tab === 'goals' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🏆 Goals</button>
+            <button onClick={() => setTab('vault')} style={{ ...s.navBtn, background: tab === 'vault' ? '#1e293b' : 'transparent', color: tab === 'vault' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🔒 Forfeits</button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'space-between', borderTop: '1px solid #1e293b', paddingTop: '10px' }}>
             <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Active Logger:</span>
@@ -1335,7 +1352,18 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'trophies' && (
+        {tab === 'goals' && (
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+            <button onClick={() => setGoalsView('challenges')} style={{ ...s.navBtn, flex: 1, background: goalsView === 'challenges' ? '#1e293b' : 'transparent', color: goalsView === 'challenges' ? '#fbbf24' : '#94a3b8', border: '1px solid #1e293b' }}>🎯 Challenges</button>
+            <button onClick={() => setGoalsView('trophies')} style={{ ...s.navBtn, flex: 1, background: goalsView === 'trophies' ? '#1e293b' : 'transparent', color: goalsView === 'trophies' ? '#fbbf24' : '#94a3b8', border: '1px solid #1e293b' }}>🏆 Trophies</button>
+          </div>
+        )}
+
+        {tab === 'vault' && (
+          <ForfeitVault db={db} person={person} unlockedFor={vaultUnlockedFor} setUnlockedFor={setVaultUnlockedFor} items={vaultItems} setItems={setVaultItems} s={s} />
+        )}
+
+        {tab === 'goals' && goalsView === 'trophies' && (
           <div style={s.panel}>
             <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.1rem' }}>🏆 Trophy Room</h3>
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Unlock achievements together as your reps climb!</p>
@@ -1357,7 +1385,7 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'challenges' && (
+        {tab === 'goals' && goalsView === 'challenges' && (
           <div style={s.panel}>
             <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.1rem' }}>🎯 Challenges</h3>
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Live races and goals — progress updates as you log. Daily challenges reset at midnight, weekly ones on Monday.</p>
