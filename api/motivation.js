@@ -152,11 +152,22 @@ export default async function handler(req, res) {
   }
   const doc = await docRes.json();
   const fields = doc.fields || {};
-  const scores = fields.scores?.mapValue?.fields || {};
-  const totals = {
-    Martin: Number(scores.Martin?.integerValue || 0),
-    Karine: Number(scores.Karine?.integerValue || 0),
-  };
+  // Scores reset weekly (Mon–Sun) since 2026-11-23: compare this week's
+  // totals from the log, not the all-time running scores.
+  const weekStart = (() => {
+    const d = new Date(today + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    return d.toISOString().split('T')[0];
+  })();
+  const totals = { Martin: 0, Karine: 0 };
+  (fields.history?.arrayValue?.values || []).forEach(v => {
+    const f = v.mapValue?.fields || {};
+    const who = f.person?.stringValue;
+    const date = f.date?.stringValue || '';
+    if ((who === 'Martin' || who === 'Karine') && date >= weekStart && date <= today) {
+      totals[who] += Number(f.reps?.integerValue || f.reps?.doubleValue || 0);
+    }
+  });
   const lastPush = fields.lastMotivationPush?.mapValue?.fields || {};
   // Rest days: no motivation or reminder push for a player resting today.
   const restFields = fields.restDays?.mapValue?.fields || {};
@@ -181,7 +192,7 @@ export default async function handler(req, res) {
     const mine = totals[p];
     const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
     const opp = p === 'Martin' ? 'Karine' : 'Martin';
-    const message = `${opp} is ahead ${theirs}–${mine} — you're at less than half. ${lines[Math.floor(Math.random() * lines.length)]}`;
+    const message = `${opp} is ahead ${theirs}–${mine} this week — you're at less than half. ${lines[Math.floor(Math.random() * lines.length)]}`;
     return {
       person: p,
       pic: motivationPicFor(p.toLowerCase()),
@@ -212,7 +223,7 @@ export default async function handler(req, res) {
           const mine = totals[p];
           const theirs = totals[p === 'Martin' ? 'Karine' : 'Martin'];
           const opp = p === 'Martin' ? 'Karine' : 'Martin';
-          const scoreBit = `${opp} is at ${theirs}, you're at ${mine}.`;
+          const scoreBit = `this week ${opp} is at ${theirs}, you're at ${mine}.`;
           const message = streak > 0
             ? `🔥 Your ${streak}-day streak is on the line — ${scoreBit} Log some reps before the day ends!`
             : `💪 You haven't logged any reps yet today — ${scoreBit} Log some to keep the challenge going!`;

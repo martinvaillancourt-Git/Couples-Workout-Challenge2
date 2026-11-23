@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import Metrics from './Metrics';
 import ForfeitVault from './ForfeitVault.jsx';
 import { initOneSignal, enableNotifications, setActivePlayer, notifyOpponent, isOneSignalConfigured } from './onesignal.js';
 
@@ -623,8 +624,9 @@ export default function App() {
     if (localStorage.getItem(marker)) return;
     welcomeShownRef.current = marker;
     localStorage.setItem(marker, '1');
-    const mine = person === 'Martin' ? scores.Martin : scores.Karine;
-    const theirs = person === 'Martin' ? scores.Karine : scores.Martin;
+    const wk = computeWeekTotals(history, getMondayStr(today));
+    const mine = person === 'Martin' ? wk.martin : wk.karine;
+    const theirs = person === 'Martin' ? wk.karine : wk.martin;
     const todayReps = history
       .filter(h => h.date === today && h.person === person)
       .reduce((a, h) => a + (h.reps || 0), 0);
@@ -732,7 +734,10 @@ export default function App() {
 
     // Taking the lead with a log is a win moment — floating hearts.
     const opponent = who === 'Martin' ? 'Karine' : 'Martin';
-    if (scores[who] <= scores[opponent] && updatedScores[who] > updatedScores[opponent]) triggerHearts();
+    const wkStart = getMondayStr(entry.date);
+    const before = computeWeekTotals(history, wkStart), after = computeWeekTotals(updatedHistory, wkStart);
+    const k = p => p.toLowerCase();
+    if (before[k(who)] <= before[k(opponent)] && after[k(who)] > after[k(opponent)]) triggerHearts();
 
     saveToCloud(updatedScores, updatedHistory);
     checkBurstPush(who, updatedHistory);
@@ -764,13 +769,19 @@ export default function App() {
     saveToCloud(updatedScores, rest);
   };
 
-  const martinReps = scores.Martin;
-  const karineReps = scores.Karine;
+  // Scores at the top reset every Monday: they're this week's totals from
+  // the log. The stored scores keep running all-time (Metrics tab, ranks,
+  // trophies, Race to 5,000).
+  const martinAll = scores.Martin;
+  const karineAll = scores.Karine;
+  const weekNow = computeWeekTotals(history, getMondayStr(todayDateStr));
+  const martinReps = weekNow.martin;
+  const karineReps = weekNow.karine;
   const totalReps = martinReps + karineReps;
   const martinPct = totalReps === 0 ? 50 : Math.round((martinReps / totalReps) * 100);
 
-  const martinRank = getRank(martinReps);
-  const karineRank = getRank(karineReps);
+  const martinRank = getRank(martinAll);
+  const karineRank = getRank(karineAll);
   const streaks = computeStreaks(history, restDays);
 
   // Toggle today as a rest day for the active player (max 2 per Mon–Sun week).
@@ -793,7 +804,7 @@ export default function App() {
       console.error('Failed to save rest day:', err);
     }
   };
-  const unlockedTrophies = TROPHIES.filter(t => t.check(martinReps, karineReps, history, streaks, weeklyWins));
+  const unlockedTrophies = TROPHIES.filter(t => t.check(martinAll, karineAll, history, streaks, weeklyWins));
 
   // Weekly Showdown (Monday–Sunday)
   const thisWeekStart = getMondayStr(todayDateStr);
@@ -948,8 +959,9 @@ export default function App() {
     const hour = now.getHours();
     const slot = hour === 12 ? 'noon' : hour === 18 ? '18' : null;
     if (!slot) return;
-    const mine = person === 'Martin' ? scores.Martin : scores.Karine;
-    const theirs = person === 'Martin' ? scores.Karine : scores.Martin;
+    const wk = computeWeekTotals(history, getMondayStr(localDateStr(now)));
+    const mine = person === 'Martin' ? wk.martin : wk.karine;
+    const theirs = person === 'Martin' ? wk.karine : wk.martin;
     if (!isBehindByHalf(mine, theirs)) return;
     const key = person === 'Martin' ? 'alleyMotivationLastShown' : 'johnnyMotivationLastShown';
     const today = localDateStr(now);
@@ -1090,7 +1102,7 @@ export default function App() {
                 <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem' }}>Martin {martinReps > karineReps && '👑'}</span>
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: martinRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{martinRank.title}</span>
               </div>
-              <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps</span></div>
+              <div style={s.scoreNum}>{martinReps.toLocaleString()} <span style={s.unit}>reps this week</span></div>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Martin.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Martin.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Martin.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Martin.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Martin.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Martin.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Martin.best}</span>}
@@ -1105,7 +1117,7 @@ export default function App() {
                 <span style={{ color: '#f472b6', fontWeight: 700, fontSize: '0.9rem' }}>Karine {karineReps > martinReps && '👑'}</span>
                 <span style={{ fontSize: '0.62rem', fontWeight: 800, color: karineRank.color, background: 'rgba(255,255,255,0.05)', padding: '2px 5px', borderRadius: '4px' }}>{karineRank.title}</span>
               </div>
-              <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps</span></div>
+              <div style={s.scoreNum}>{karineReps.toLocaleString()} <span style={s.unit}>reps this week</span></div>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, marginTop: '6px', padding: '5px 8px', borderRadius: '8px', background: streaks.Karine.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(100,116,139,0.12)', border: `1px solid ${streaks.Karine.current > 0 ? 'rgba(251,146,60,0.45)' : '#1e293b'}`, color: streaks.Karine.current > 0 ? '#fdba74' : '#94a3b8' }}>
                 {streaks.Karine.current > 0 ? (<><span style={{ display: 'inline-block', animation: 'flameFlicker 1.2s ease-in-out infinite' }}>🔥</span> {streaks.Karine.current}-day streak</>) : 'No streak yet — log today!'}
                 {streaks.Karine.best > 0 && <span style={{ color: '#64748b', fontWeight: 600 }}> · best {streaks.Karine.best}</span>}
@@ -1238,11 +1250,12 @@ export default function App() {
         </div>
 
         <div style={s.nav}>
-          <div style={{ display: 'flex', gap: '6px', width: '100%', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '3px', width: '100%', justifyContent: 'space-between' }}>
             <button onClick={() => setTab('arena')} style={{ ...s.navBtn, background: tab === 'arena' ? '#1e293b' : 'transparent', color: tab === 'arena' ? '#38bdf8' : '#94a3b8', flex: 1 }}>💪 Logger</button>
             <button onClick={() => setTab('cal')} style={{ ...s.navBtn, background: tab === 'cal' ? '#1e293b' : 'transparent', color: tab === 'cal' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🗓️ Calendar</button>
             <button onClick={() => setTab('goals')} style={{ ...s.navBtn, background: tab === 'goals' ? '#1e293b' : 'transparent', color: tab === 'goals' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🏆 Goals</button>
             <button onClick={() => setTab('vault')} style={{ ...s.navBtn, background: tab === 'vault' ? '#1e293b' : 'transparent', color: tab === 'vault' ? '#38bdf8' : '#94a3b8', flex: 1 }}>🔒 Forfeits</button>
+            <button onClick={() => setTab('metrics')} style={{ ...s.navBtn, background: tab === 'metrics' ? '#1e293b' : 'transparent', color: tab === 'metrics' ? '#38bdf8' : '#94a3b8', flex: 1 }}>📊 Metrics</button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', justifyContent: 'space-between', borderTop: '1px solid #1e293b', paddingTop: '10px' }}>
             <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Active Logger:</span>
@@ -1418,6 +1431,10 @@ export default function App() {
           </div>
         )}
 
+        {tab === 'metrics' && (
+          <Metrics history={history} scores={scores} weeklyWins={weeklyWins} restDays={restDays} streaks={streaks} todayStr={todayDateStr} s={s} />
+        )}
+
         {tab === 'vault' && (
           <ForfeitVault db={db} person={person} unlockedFor={vaultUnlockedFor} setUnlockedFor={setVaultUnlockedFor} items={vaultItems} setItems={setVaultItems} s={s} />
         )}
@@ -1428,7 +1445,7 @@ export default function App() {
             <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '16px' }}>Unlock achievements together as your reps climb!</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {TROPHIES.map(t => {
-                const unlocked = t.check(martinReps, karineReps, history, streaks, weeklyWins);
+                const unlocked = t.check(martinAll, karineAll, history, streaks, weeklyWins);
                 return (
                   <div key={t.id} style={{ background: '#000000', border: `2px solid ${unlocked ? '#fbbf24' : '#1e293b'}`, borderRadius: '12px', padding: '12px', textAlign: 'center', opacity: unlocked ? 1 : 0.4 }}>
                     <span style={{ fontSize: '2rem', display: 'block', marginBottom: '6px' }}>{t.icon}</span>
@@ -1516,13 +1533,13 @@ export default function App() {
               <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🏆 Race to 5,000</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (martinReps >= 5000 || karineReps >= 5000) ? '#fbbf24' : '#94a3b8' }}>
-                    {martinReps >= 5000 && karineReps >= 5000 ? (martinReps === karineReps ? 'Tied' : `🏆 ${martinReps > karineReps ? 'Martin' : 'Karine'} won!`) : martinReps >= 5000 ? '🏆 Martin won!' : karineReps >= 5000 ? '🏆 Karine won!' : martinReps === karineReps ? 'Tied' : martinReps > karineReps ? 'Martin leads' : 'Karine leads'}
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (martinAll >= 5000 || karineAll >= 5000) ? '#fbbf24' : '#94a3b8' }}>
+                    {martinAll >= 5000 && karineAll >= 5000 ? (martinAll === karineAll ? 'Tied' : `🏆 ${martinAll > karineAll ? 'Martin' : 'Karine'} won!`) : martinAll >= 5000 ? '🏆 Martin won!' : karineAll >= 5000 ? '🏆 Karine won!' : martinAll === karineAll ? 'Tied' : martinAll > karineAll ? 'Martin leads' : 'Karine leads'}
                   </span>
                 </div>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 10px 0' }}>First to 5,000 total reps, all time. The long game.</p>
-                {progressRow('#38bdf8', 'Martin', martinReps, 5000)}
-                {progressRow('#f472b6', 'Karine', karineReps, 5000)}
+                {progressRow('#38bdf8', 'Martin', martinAll, 5000)}
+                {progressRow('#f472b6', 'Karine', karineAll, 5000)}
               </div>
 
               <div style={{ background: '#000000', border: '1px solid #1e293b', borderRadius: '12px', padding: '12px' }}>
@@ -1677,7 +1694,7 @@ const s = {
   tugK: { background: '#db2777', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '10px', fontSize: '0.7rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' },
   tugFlag: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, fontSize: '1rem' },
   nav: { display: 'flex', flexDirection: 'column', gap: '10px', background: '#000000', padding: '10px 12px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '14px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' },
-  navBtn: { border: 'none', padding: '8px 10px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' },
+  navBtn: { border: 'none', padding: '8px 4px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem', whiteSpace: 'nowrap' },
   toggleBtn: { border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 700, color: '#fff', cursor: 'pointer', fontSize: '0.82rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' },
   grid2: { display: 'grid', gridTemplateColumns: '1fr', gap: '14px' },
   quickBtn: { background: '#000000', border: '1px solid #334155', color: '#f8fafc', padding: '10px 8px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem', textAlign: 'center' },
