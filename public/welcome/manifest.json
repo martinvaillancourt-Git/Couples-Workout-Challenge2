@@ -14,38 +14,17 @@
     ]
   },
   "Martin": {
-    "clap": [
-      "/welcome/alley-snake-clap.mp4",
-      "/welcome/alley-snake-clap2.mp4",
-      "/welcome/alley-178-anim.mp4",
-      "/welcome/alley-180-anim.mp4",
-      "/welcome/alley-179-anim.mp4",
-      "/welcome/alley-174-anim.mp4"
+    "wave": [
+      "/welcome/alley-brunette-wave.mp4"
     ],
     "sad": [
-      "/welcome/alley-snake-sad.mp4",
-      "/welcome/alley-snake-sad2.mp4"
+      "/welcome/alley-brunette-sad.mp4"
     ],
     "urgent": [
-      "/welcome/alley-snake-urgent.mp4",
-      "/welcome/alley-snake-urgent2.mp4"
+      "/welcome/alley-brunette-urgent.mp4"
     ],
-    "wave": [
-      "/welcome/alley-snake-wave.mp4",
-      "/welcome/alley-snake-wave2.mp4",
-      "/welcome/alley-177-anim.mp4",
-      "/welcome/alley-181-anim.mp4",
-      "/welcome/alley-182-anim.mp4",
-      "/welcome/alley-186-anim.mp4",
-      "/welcome/alley-183-anim.mp4",
-      "/welcome/alley-187-anim.mp4",
-      "/welcome/alley-188-anim.mp4",
-      "/welcome/alley-189-anim.mp4",
-      "/welcome/alley-190-anim.mp4",
-      "/welcome/alley-185-anim.mp4",
-      "/welcome/alley-173-anim.mp4",
-      "/welcome/alley-175-anim.mp4",
-      "/welcome/alley-176-anim.mp4"
+    "clap": [
+      "/welcome/alley-brunette-clap.mp4"
     ]
   }
 }
